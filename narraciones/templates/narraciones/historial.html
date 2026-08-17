@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Narraciones - Reporte General</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #f8fafc;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background-color: white; padding: 0; }
+            .shadow-xl, .shadow-sm { box-shadow: none !important; border: 1px solid #eee; }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Encabezado del Reporte -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100">
+            <div class="text-center md:text-left">
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">📊 Reporte General de Sesiones</h1>
+                <p class="text-slate-500 mt-1 text-sm">Seguimiento pedagógico, tiempos de lectura y nivel de agrado</p>
+            </div>
+            
+            <!-- Resumen Estadístico Dinámico -->
+            <div class="grid grid-cols-3 gap-3 md:gap-4 mt-6 md:mt-0">
+                <div class="bg-blue-50 px-4 py-3 rounded-2xl border border-blue-100 text-center shadow-sm min-w-[90px]">
+                    <span id="stat-total" class="block text-xl font-bold text-blue-600">{{ total|default:0 }}</span>
+                    <span class="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Totales</span>
+                </div>
+                <div class="bg-emerald-50 px-4 py-3 rounded-2xl border border-emerald-100 text-center shadow-sm min-w-[90px]">
+                    <span id="stat-likes" class="block text-xl font-bold text-emerald-600">{{ likes|default:0 }}</span>
+                    <span class="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Me gustó</span>
+                </div>
+                <div class="bg-rose-50 px-4 py-3 rounded-2xl border border-rose-100 text-center shadow-sm min-w-[90px]">
+                    <span id="stat-dislikes" class="block text-xl font-bold text-rose-600">0</span>
+                    <span class="text-[10px] text-rose-400 font-bold uppercase tracking-wider">A mejorar</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Buscador en tiempo real -->
+            <div class="lg:col-span-2 space-y-4">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 no-print flex flex-col justify-center h-full">
+                    <label for="searchInput" class="block text-slate-700 font-bold mb-2 text-sm">🔍 Filtrar por Alumno o Cuento</label>
+                    <input type="text" id="searchInput" placeholder="Escribe el nombre del niño o título del cuento..." 
+                        class="w-full p-3.5 border-2 border-slate-100 rounded-2xl focus:border-blue-500 outline-none transition-all text-slate-700 text-sm font-medium">
+                </div>
+            </div>
+
+            <!-- Gráfico de Satisfacción -->
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center">
+                <h3 class="text-slate-700 font-bold mb-3 text-center text-xs uppercase tracking-wider">Satisfacción General</h3>
+                <div class="w-28 h-28 relative flex items-center justify-center">
+                    <canvas id="satisfactionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Resultados -->
+        <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse" id="resultsTable">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                            <th class="px-6 py-4">Alumno / Alumna</th>
+                            <th class="px-6 py-4">Cuento</th>
+                            <th class="px-6 py-4 text-center">Duración</th>
+                            <th class="px-6 py-4 text-center">Fecha</th>
+                            <th class="px-6 py-4 text-center">Calificación</th>
+                            <th class="px-6 py-4 text-center no-print">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-600 text-sm font-medium" id="resultsTbody">
+                        {% for registro in resultados %}
+                        <tr id="row-{{ registro.id }}" class="hover:bg-blue-50/40 transition-colors result-row" data-liked="{{ registro.le_gusto|yesno:'true,false' }}">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">
+                                        {% if registro.nino %}
+                                            {{ registro.nino.nombre|slice:":1" }}
+                                        {% else %}
+                                            ?
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-slate-800 student-name">
+                                            {% if registro.nino %}
+                                                {{ registro.nino.nombre }} {{ registro.nino.apellido }}
+                                            {% else %}
+                                                <span class="text-slate-400 italic">Anónimo</span>
+                                            {% endif %}
+                                        </p>
+                                        {% if registro.nino %}
+                                            <p class="text-[10px] text-slate-400 font-semibold uppercase">{{ registro.nino.edad }} años | {{ registro.nino.institucion_o_sala|default:"Sin sala" }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="bg-slate-100 px-3 py-1.5 rounded-xl text-slate-700 text-xs font-semibold story-title">
+                                    📖 {{ registro.cuento.titulo }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center text-xs text-slate-500 font-semibold">
+                                {% if registro.duracion_segundos %}
+                                    ⏱️ {{ registro.duracion_segundos }}s
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-xs text-slate-500 text-center">
+                                {{ registro.fecha|date:"d/m/Y" }} <br>
+                                <span class="text-[10px] text-slate-400 font-normal">{{ registro.fecha|date:"H:i" }} hs</span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                {% if registro.le_gusto %}
+                                    <span class="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-700 text-[11px] font-bold px-3 py-1 rounded-full">
+                                        <span>👍</span> LE GUSTÓ
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-1.5 bg-rose-100 text-rose-700 text-[11px] font-bold px-3 py-1 rounded-full">
+                                        <span>👎</span> A MEJORAR
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-center no-print">
+                                <div class="flex items-center justify-center gap-2">
+                                    {% if registro.nino %}
+                                        <a href="{% url 'narraciones:exportar_pdf' nino_id=registro.nino.id %}" title="Descargar informe PDF" class="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                                            📄
+                                        </a>
+                                    {% endif %}
+                                    <button onclick="eliminarSesion('{{ registro.id }}')" title="Eliminar registro" class="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-all">
+                                        🗑️
+                                    </button>
+                                    
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr id="empty-row">
+                            <td colspan="6" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center opacity-40">
+                                    <span class="text-5xl mb-3">📭</span>
+                                    <p class="text-base font-bold text-slate-700">Aún no hay registros de narración</p>
+                                    <p class="text-xs text-slate-500 mt-1">Las sesiones finalizadas aparecerán aquí automáticamente.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="mt-8 flex flex-wrap justify-center gap-4 no-print">
+            <a href="{% url 'narraciones:index' %}" class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-bold py-3 px-8 rounded-full transition-all shadow-md border border-slate-200 text-sm">
+                <span>⬅</span> VOLVER AL PANEL
+            </a>
+            <button onclick="window.print()" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full transition-all shadow-md text-sm">
+                <span>🖨️</span> IMPRIMIR REPORTE
+            </button>
+        </div>
+    </div>
+
+    <!-- Pie de página -->
+    <footer class="mt-12 text-center text-slate-400 text-[11px] uppercase tracking-widest pb-8">
+        Proyecto Narración Interactiva &copy; 2026 | Seguimiento Pedagógico
+    </footer>
+
+    <script>
+        let satisfactionChart;
+        const initialTotal = parseInt("{{ total|default:0 }}");
+        const initialLikes = parseInt("{{ likes|default:0 }}");
+
+        function updateStats(visibleRows) {
+            let total = 0;
+            let likes = 0;
+            let dislikes = 0;
+
+            visibleRows.forEach(row => {
+                total++;
+                if (row.getAttribute('data-liked') === 'true') {
+                    likes++;
+                } else {
+                    dislikes++;
+                }
+            });
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-likes').innerText = likes;
+            document.getElementById('stat-dislikes').innerText = dislikes;
+
+            if (satisfactionChart) {
+                satisfactionChart.data.datasets[0].data = total > 0 ? [likes, dislikes] : [0, 0];
+                satisfactionChart.update();
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('keyup', function() {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.result-row');
+            const visibleRows = [];
+
+            rows.forEach(row => {
+                const name = row.querySelector('.student-name').innerText.toLowerCase();
+                const story = row.querySelector('.story-title').innerText.toLowerCase();
+                
+                if (name.includes(filter) || story.includes(filter)) {
+                    row.style.display = "";
+                    visibleRows.push(row);
+                } else {
+                    row.style.display = "none";
+                }
+            });
+
+            updateStats(visibleRows);
+        });
+
+        async function eliminarSesion(sesionId) {
+            if (!confirm("¿Estás seguro de que deseas eliminar este registro de sesión?")) return;
+
+            try {
+                const response = await fetch(`{% url 'narraciones:eliminar_sesion' sesion_id=0 %}`.replace('0', sesionId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+
+                if (response.ok) {
+                    const row = document.getElementById(`row-${sesionId}`);
+                    if (row) {
+                        row.remove();
+                        const remainingRows = Array.from(document.querySelectorAll('.result-row')).filter(r => r.style.display !== 'none');
+                        updateStats(remainingRows);
+                    }
+                } else {
+                    alert("No se pudo eliminar el registro.");
+                }
+            } catch (err) {
+                console.error("Error al eliminar sesión:", err);
+            }
+        }
+
+        window.onload = function() {
+            const ctx = document.getElementById('satisfactionChart').getContext('2d');
+            const initialDislikes = Math.max(0, initialTotal - initialLikes);
+            
+            satisfactionChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Me gustó', 'A mejorar'],
+                    datasets: [{
+                        data: initialTotal > 0 ? [initialLikes, initialDislikes] : [1, 0],
+                        backgroundColor: initialTotal > 0 ? ['#10b981', '#f43f5e'] : ['#e2e8f0', '#e2e8f0'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: initialTotal > 0 }
+                    },
+                    cutout: '72%'
+                }
+            });
+            
+            document.getElementById('stat-dislikes').innerText = initialDislikes;
+        };
+    </script>
+</body>
+</html>

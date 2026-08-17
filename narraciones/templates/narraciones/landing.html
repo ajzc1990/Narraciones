@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Narraciones Interactivas - Estimulación Lingüística</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #f8fafc; }
+    </style>
+</head>
+<body class="text-slate-700 flex flex-col min-h-screen">
+
+    <!-- Navegación -->
+    <nav class="max-w-6xl mx-auto w-full px-6 py-6 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <span class="text-3xl">🎙️</span>
+            <span class="font-extrabold text-xl text-blue-600 tracking-tight">Narraciones<span class="text-slate-800">Interactivas</span></span>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="{% url 'narraciones:historial_sesiones' %}" class="text-sm font-bold text-slate-600 hover:text-blue-600 transition">Docentes</a>
+            <a href="{% url 'narraciones:index' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-full shadow-md transition">Entrar a la App</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="max-w-5xl mx-auto px-6 pt-12 pb-20 text-center flex flex-col items-center">
+        <span class="bg-blue-50 text-blue-600 text-xs font-extrabold px-4 py-1.5 rounded-full uppercase tracking-wider mb-4 border border-blue-100">
+            Tecnología + Pedagogía Infantil
+        </span>
+        <h1 class="text-4xl md:text-6xl font-extrabold text-slate-900 leading-tight mb-6">
+            Estimulación del lenguaje a través de <span class="text-blue-600">pictogramas en vivo</span>
+        </h1>
+        <p class="text-lg md:text-xl text-slate-500 max-w-2xl mb-8">
+            Una plataforma interactiva que escucha la voz de los niños al narrar y proyecta ilustraciones instantáneas, facilitando la comprensión y el progreso comunicativo.
+        </p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="{% url 'narraciones:index' %}" class="bg-emerald-500 hover:bg-emerald-600 text-white text-base font-bold px-8 py-4 rounded-full shadow-lg shadow-emerald-200 transition transform hover:-translate-y-0.5">
+                🚀 Probar la Experiencia
+            </a>
+            <a href="{% url 'narraciones:historial_sesiones' %}" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-base font-bold px-8 py-4 rounded-full shadow-sm transition">
+                📊 Ver Panel de Resultados
+            </a>
+        </div>
+    </header>
+
+    <!-- Métricas del Sistema -->
+    <section class="bg-white border-y border-slate-100 py-12">
+        <div class="max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div>
+                <span class="text-4xl font-extrabold text-blue-600 block mb-1">{{ total_cuentos }}</span>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Cuentos Adaptados</span>
+            </div>
+            <div>
+                <span class="text-4xl font-extrabold text-emerald-500 block mb-1">{{ total_pictogramas }}+</span>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pictogramas & Sinónimos</span>
+            </div>
+            <div>
+                <span class="text-4xl font-extrabold text-purple-600 block mb-1">{{ total_sesiones }}</span>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sesiones Evaluadas</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Características Principales -->
+    <section class="max-w-5xl mx-auto px-6 py-20">
+        <h2 class="text-2xl md:text-3xl font-bold text-center text-slate-900 mb-12">¿Por qué usar Narraciones Interactivas?</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+                <span class="text-4xl block mb-4">⚡</span>
+                <h3 class="font-bold text-lg text-slate-800 mb-2">Reconocimiento Instantáneo</h3>
+                <p class="text-sm text-slate-500">Mapeo fluido mediante inteligencia en navegador sin latencias ni configuraciones complejas.</p>
+            </div>
+            <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+                <span class="text-4xl block mb-4">🧩</span>
+                <h3 class="font-bold text-lg text-slate-800 mb-2">Diccionario de Sinónimos</h3>
+                <p class="text-sm text-slate-500">Relaciona múltiples variantes de palabras con un único pictograma de referencia.</p>
+            </div>
+            <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+                <span class="text-4xl block mb-4">📄</span>
+                <h3 class="font-bold text-lg text-slate-800 mb-2">Informes Pedagógicos</h3>
+                <p class="text-sm text-slate-500">Exportación automática en PDF con métricas individuales para seguimiento institucional.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="mt-auto border-t border-slate-100 py-8 text-center text-xs text-slate-400">
+        Narraciones Interactivas &copy; 2026 — Plataforma de Innovación Educativa
+    </footer>
+</body>
+</html>
