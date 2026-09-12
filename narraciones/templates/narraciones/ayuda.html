@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Ayuda - Narraciones Interactivas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #f8fafc; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div class="max-w-3xl mx-auto">
+        <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 mb-6 text-center">
+            <span class="text-4xl block mb-2">❓</span>
+            <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Manual de Ayuda</h1>
+            <p class="text-slate-500 mt-1 text-sm">Guía rápida de Narraciones Interactivas</p>
+        </div>
+
+        <div class="space-y-4">
+            <details class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100" open>
+                <summary class="font-bold text-slate-800 cursor-pointer">🔑 ¿Cómo creo mi cuenta y entro a la app?</summary>
+                <p class="text-sm text-slate-600 mt-3 leading-relaxed">
+                    Tocá "Registrarse" desde la portada, completá tu nombre, apellido, edad, e-mail, un nombre de
+                    usuario y una contraseña de al menos 10 caracteres. Al confirmar, ingresás automáticamente al
+                    Menú Principal. Las próximas veces, usá "Iniciar Sesión" con tu usuario y contraseña.
+                </p>
+            </details>
+
+            <details class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <summary class="font-bold text-slate-800 cursor-pointer">👶 ¿Cómo registro a un niño o niña?</summary>
+                <p class="text-sm text-slate-600 mt-3 leading-relaxed">
+                    Desde el Menú Principal, tocá "Alta de niño/a" y completá nombre, apellido, DNI, teléfono,
+                    domicilio, fecha de nacimiento y edad. Para modificar o eliminar un registro, entrá a
+                    "Modificar / Eliminar" y buscalo por nombre, apellido o DNI.
+                </p>
+            </details>
+
+            <details class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <summary class="font-bold text-slate-800 cursor-pointer">🎤 ¿Cómo empiezo una narración?</summary>
+                <p class="text-sm text-slate-600 mt-3 leading-relaxed">
+                    Entrá a "Comenzar mi lectura", elegí al alumno/a y el cuento, y presioná
+                    "INICIAR NARRACIÓN". El navegador te pedirá permiso para usar el micrófono: aceptalo. A medida
+                    que se lee el cuento en voz alta, van apareciendo los pictogramas de las palabras reconocidas.
+                    Cuando termine, presioná "FINALIZAR ACTIVIDAD".
+                </p>
+            </details>
+
+            <details class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <summary class="font-bold text-slate-800 cursor-pointer">🧠 ¿Por qué aparece una insignia "IA" en algunos pictogramas?</summary>
+                <p class="text-sm text-slate-600 mt-3 leading-relaxed">
+                    La mayoría de las palabras se reconocen por un diccionario exacto. Cuando se dice una palabra
+                    parecida pero no cargada (por ejemplo un diminutivo), una red neuronal entrenada con nuestros
+                    propios pictogramas intenta reconocerla igual. Esas tarjetas muestran la insignia "🧠 IA" con
+                    el porcentaje de confianza de la predicción.
+                </p>
+            </details>
+
+            <details class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <summary class="font-bold text-slate-800 cursor-pointer">🎙️ El micrófono no funciona o no me reconoce</summary>
+                <p class="text-sm text-slate-600 mt-3 leading-relaxed">
+                    Usá Google Chrome o Microsoft Edge actualizados (el reconocimiento de voz no funciona en todos
+                    los navegadores). Revisá que el navegador tenga permiso de micrófono para este sitio y que no
+                    haya otra aplicación usándolo. Hablá cerca del micrófono y con buena pronunciación.
+                </p>
+            </details>
+
+            <details class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <summary class="font-bold text-slate-800 cursor-pointer">📊 ¿Dónde veo el progreso de cada niño/a?</summary>
+                <p class="text-sm text-slate-600 mt-3 leading-relaxed">
+                    En "Reporte" (Menú Principal) vas a encontrar el historial completo de sesiones, con filtro por
+                    nombre o cuento, el porcentaje de satisfacción y la opción de exportar un informe en PDF por
+                    alumno/a.
+                </p>
+            </details>
+
+            <details class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <summary class="font-bold text-slate-800 cursor-pointer">🖼️ ¿Cómo se aprueban las imágenes de los pictogramas?</summary>
+                <p class="text-sm text-slate-600 mt-3 leading-relaxed">
+                    Toda imagen nueva pasa primero por una validación técnica automática (formato, tamaño y
+                    resolución) y luego necesita que un administrador la marque como "apta para menores" antes de
+                    que se use en una narración, para garantizar que el contenido sea siempre adecuado.
+                </p>
+            </details>
+        </div>
+
+        <div class="mt-8 flex justify-center">
+            <button onclick="history.back()" class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-bold py-3 px-8 rounded-full transition-all shadow-md border border-slate-200 text-sm">
+                <span>⬅</span> VOLVER
+            </button>
+        </div>
+    </div>
+</body>
+</html>

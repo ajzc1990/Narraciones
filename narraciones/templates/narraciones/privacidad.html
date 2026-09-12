@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidad - Narraciones Interactivas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #f8fafc; }
+        .contenido h2 { font-weight: 800; color: #1e293b; margin-top: 1.75rem; margin-bottom: 0.5rem; font-size: 1.1rem; }
+        .contenido p, .contenido li { color: #475569; font-size: 0.92rem; line-height: 1.6; }
+        .contenido ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div class="max-w-3xl mx-auto">
+        <div class="bg-white p-6 md:p-10 rounded-3xl shadow-sm border border-slate-100">
+            <div class="text-center mb-6">
+                <span class="text-4xl block mb-2">🔒</span>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Política de Privacidad</h1>
+                <p class="text-slate-400 text-xs mt-1">Última actualización: {% now "d/m/Y" %}</p>
+            </div>
+
+            <div class="contenido">
+                <p>
+                    Esta política explica qué datos recopila <strong>Narraciones Interactivas</strong>, para qué se
+                    usan y qué derechos tenés sobre ellos, conforme a la Ley 25.326 de Protección de Datos
+                    Personales de la República Argentina. Como la plataforma registra datos de niños y niñas, la
+                    tratamos con especial cuidado.
+
+                <h2>1. Quién es responsable de los datos</h2>
+                <p>
+                    Cada institución (jardín, gabinete, escuela) que se registra en la plataforma es responsable de
+                    los datos de los niños y niñas que carga, y designa a los usuarios (docentes, tutores) que
+                    pueden acceder a ellos. Los datos de una institución nunca son visibles para otra.
+
+                <h2>2. Qué datos recopilamos</h2>
+                <p><strong>Del usuario adulto que se registra (RF-02):</strong></p>
+                <ul>
+                    <li>Nombre, apellido y edad</li>
+                    <li>E-mail y nombre de usuario</li>
+                    <li>Contraseña (almacenada siempre encriptada, nunca en texto plano)</li>
+                    <li>Institución/jardín al que pertenece</li>
+                </ul>
+                <p><strong>Del niño o niña que se registra (RF-07):</strong></p>
+                <ul>
+                    <li>Nombre, apellido, DNI, fecha de nacimiento</li>
+                    <li>Domicilio y teléfono de contacto</li>
+                    <li>Registro de que se cuenta con la autorización de sus padres/tutores, y la fecha en que se confirmó</li>
+                </ul>
+                <p><strong>De cada sesión de narración:</strong></p>
+                <ul>
+                    <li>Cuento narrado (o si fue una narración libre), duración y si al niño/a le gustó</li>
+                    <li>Las palabras que el navegador reconoce por voz solo se usan en el momento para mostrar el
+                        pictograma correspondiente; no se almacena audio ni transcripciones.</li>
+                </ul>
+
+                <h2>3. Para qué usamos estos datos</h2>
+                <p>
+                    Exclusivamente para el funcionamiento de la plataforma: identificar al niño/a durante la
+                    narración, generar los informes de progreso pedagógico para docentes y familias, y mantener la
+                    seguridad de la cuenta. No vendemos ni compartimos estos datos con terceros con fines
+                    comerciales o publicitarios.
+
+                <h2>4. Reconocimiento de voz e Inteligencia Artificial</h2>
+                <p>
+                    El reconocimiento de voz lo realiza el navegador (Chrome/Edge) de forma nativa; el audio no pasa
+                    por nuestros servidores. Además de un diccionario de palabras, usamos una red neuronal entrenada
+                    por nosotros mismos con el vocabulario de la propia plataforma para reconocer variantes de
+                    palabras — este modelo no usa servicios de IA externos ni envía datos a terceros.
+
+                <h2>5. Tus derechos (Ley 25.326)</h2>
+                <p>Como titular de los datos (o responsable de un niño/a registrado), tenés derecho a:</p>
+                <ul>
+                    <li><strong>Acceso:</strong> saber qué datos tenemos guardados.</li>
+                    <li><strong>Rectificación:</strong> corregir datos incorrectos o desactualizados.</li>
+                    <li><strong>Supresión (baja):</strong> pedir que se eliminen los datos de un niño/a o de tu
+                        cuenta. La opción "Eliminar" dentro de la gestión de niños hace esto de forma inmediata.</li>
+                </ul>
+                <p>
+                    Para ejercer estos derechos podés usar las opciones de edición/eliminación dentro de la
+                    aplicación, o contactar a la institución responsable de tus datos.
+
+                <h2>6. Seguridad</h2>
+                <p>
+                    Las contraseñas se almacenan encriptadas, la sesión se protege contra accesos no autorizados
+                    (inicio de sesión obligatorio) y los datos de cada institución están aislados del resto. Ninguna
+                    imagen se muestra durante una narración sin haber pasado un control técnico automático y una
+                    aprobación manual (ver RF-05 en nuestra documentación de requisitos).
+
+                <h2>7. Cookies</h2>
+                <p>
+                    Usamos únicamente una cookie de sesión técnica, necesaria para mantenerte identificado mientras
+                    usás la aplicación. No usamos cookies de seguimiento ni de publicidad.
+
+                <h2>8. Contacto</h2>
+                <p>
+                    Ante cualquier consulta sobre esta política o tus datos, contactá a la institución (jardín)
+                    donde fuiste registrado, o al equipo de Narraciones Interactivas.
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-center gap-4">
+            <a href="{% url 'narraciones:terminos' %}" class="text-blue-600 text-sm font-bold hover:underline">Ver Términos de Uso</a>
+            <a href="{% url 'narraciones:landing' %}" class="text-slate-400 text-sm font-bold hover:underline">⬅ Volver al inicio</a>
+        </div>
+    </div>
+</body>
+</html>

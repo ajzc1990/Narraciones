@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuenta Bloqueada Temporalmente - Narraciones Interactivas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #f0f9ff; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl border border-rose-100 text-center">
+        <span class="text-5xl block mb-4">🔒</span>
+        <h1 class="text-xl font-extrabold text-slate-800 mb-2">Demasiados intentos fallidos</h1>
+        <p class="text-slate-500 text-sm mb-6">
+            Por seguridad, bloqueamos temporalmente el acceso desde este dispositivo/usuario después de varios
+            intentos de inicio de sesión incorrectos.
+            {% if cooloff_time %}Volvé a intentarlo en aproximadamente {{ cooloff_time }}.{% else %}Volvé a intentarlo más tarde.{% endif %}
+        </p>
+        <p class="text-slate-400 text-xs mb-6">
+            Si no fuiste vos, no hace falta que hagas nada: el acceso se libera solo pasado ese tiempo. Si olvidaste
+            tu contraseña, podés recuperarla sin esperar.
+        </p>
+        <div class="flex flex-col gap-3">
+            <a href="{% url 'narraciones:password_reset' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all text-sm">
+                Recuperar mi contraseña
+            </a>
+            <a href="{% url 'narraciones:landing' %}" class="text-slate-400 text-sm font-bold hover:underline">⬅ Volver al inicio</a>
+        </div>
+    </div>
+</body>
+</html>

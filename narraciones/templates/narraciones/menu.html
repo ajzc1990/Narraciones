@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Principal - Narraciones Interactivas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #f0f9ff; }
+        .boton-menu {
+            transition: all 0.2s ease;
+        }
+        .boton-menu:hover { transform: translateY(-3px); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-10 px-4">
+
+    <header class="w-full max-w-3xl flex justify-between items-center mb-10">
+        <div class="flex items-center gap-2">
+            <span class="text-3xl">🎙️</span>
+            <div>
+                <span class="font-extrabold text-xl text-blue-600 tracking-tight block leading-tight">Menú</span>
+                {% if jardin %}<span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">🏫 {{ jardin.razon_social }}</span>{% endif %}
+            </div>
+        </div>
+        <div class="text-right">
+            <p class="text-sm font-bold text-slate-700">Hola, {{ user.first_name|default:user.username }} 👋</p>
+            <a href="{% url 'narraciones:logout' %}" class="text-xs text-rose-500 font-bold hover:underline">Cerrar sesión</a>
+        </div>
+    </header>
+
+    <main class="w-full max-w-3xl grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <a href="{% url 'narraciones:index' %}" class="boton-menu bg-emerald-500 hover:bg-emerald-600 text-white p-6 rounded-3xl shadow-lg flex items-center gap-4">
+            <span class="text-3xl">🎤</span>
+            <div>
+                <p class="font-extrabold text-lg">Comenzar mi lectura</p>
+                <p class="text-emerald-100 text-xs font-semibold">Iniciar una nueva narración</p>
+            </div>
+        </a>
+
+        <a href="{% url 'narraciones:historial_sesiones' %}" class="boton-menu bg-rose-500 hover:bg-rose-600 text-white p-6 rounded-3xl shadow-lg flex items-center gap-4">
+            <span class="text-3xl">📊</span>
+            <div>
+                <p class="font-extrabold text-lg">Reporte</p>
+                <p class="text-rose-100 text-xs font-semibold">Ver historial y estadísticas</p>
+            </div>
+        </a>
+
+        <a href="{% url 'narraciones:nino_alta' %}" class="boton-menu bg-purple-500 hover:bg-purple-600 text-white p-6 rounded-3xl shadow-lg flex items-center gap-4">
+            <span class="text-3xl">➕</span>
+            <div>
+                <p class="font-extrabold text-lg">Alta de niño/a</p>
+                <p class="text-purple-100 text-xs font-semibold">Registrar un nuevo alumno</p>
+            </div>
+        </a>
+
+        <a href="{% url 'narraciones:nino_lista' %}" class="boton-menu bg-teal-600 hover:bg-teal-700 text-white p-6 rounded-3xl shadow-lg flex items-center gap-4">
+            <span class="text-3xl">🛠️</span>
+            <div>
+                <p class="font-extrabold text-lg">Modificar / Eliminar</p>
+                <p class="text-teal-100 text-xs font-semibold">Gestionar niños registrados</p>
+            </div>
+        </a>
+    </main>
+
+    <a href="{% url 'narraciones:landing' %}" class="mt-10 text-slate-400 text-xs font-bold hover:text-slate-600">⬅ Volver al inicio</a>
+
+    <!-- Botón de Ayuda flotante (RNF-02) -->
+    <a href="{% url 'narraciones:ayuda' %}" target="_blank" title="Ayuda"
+       class="fixed bottom-5 right-5 z-50 bg-amber-400 hover:bg-amber-500 text-slate-900 w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-2xl font-extrabold transition-transform hover:scale-110">
+        ?
+    </a>
+</body>
+</html>

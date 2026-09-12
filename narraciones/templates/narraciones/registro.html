@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrarse - Narraciones Interactivas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #f0f9ff; }
+        .campo-error { color: #e11d48; font-size: 0.75rem; font-weight: 700; margin-top: 0.25rem; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 py-10">
+    <div class="max-w-lg w-full bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl border border-blue-100">
+        <div class="text-center mb-8">
+            <span class="text-4xl block mb-2">✨</span>
+            <h1 class="text-2xl font-extrabold text-slate-800">Crear cuenta</h1>
+            <p class="text-slate-400 text-sm font-semibold mt-1">Registrate para gestionar niños y narraciones</p>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold p-4 rounded-2xl mb-5">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="text-blue-700 font-bold mb-1.5 text-sm block">Nombre</label>
+                    {{ form.first_name }}
+                    {% for error in form.first_name.errors %}<p class="campo-error">{{ error }}</p>{% endfor %}
+                </div>
+                <div>
+                    <label class="text-blue-700 font-bold mb-1.5 text-sm block">Apellido</label>
+                    {{ form.last_name }}
+                    {% for error in form.last_name.errors %}<p class="campo-error">{{ error }}</p>{% endfor %}
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="text-blue-700 font-bold mb-1.5 text-sm block">Edad</label>
+                    {{ form.edad }}
+                    {% for error in form.edad.errors %}<p class="campo-error">{{ error }}</p>{% endfor %}
+                </div>
+                <div>
+                    <label class="text-blue-700 font-bold mb-1.5 text-sm block">E-mail</label>
+                    {{ form.email }}
+                    {% for error in form.email.errors %}<p class="campo-error">{{ error }}</p>{% endfor %}
+                </div>
+            </div>
+            <div>
+                <label class="text-blue-700 font-bold mb-1.5 text-sm block">Jardín / Institución</label>
+                {{ form.jardin_nombre }}
+                <p class="text-slate-400 text-[11px] mt-1">{{ form.jardin_nombre.help_text }}</p>
+                {% for error in form.jardin_nombre.errors %}<p class="campo-error">{{ error }}</p>{% endfor %}
+            </div>
+            <div>
+                <label class="text-blue-700 font-bold mb-1.5 text-sm block">Usuario</label>
+                {{ form.username }}
+                {% for error in form.username.errors %}<p class="campo-error">{{ error }}</p>{% endfor %}
+            </div>
+            <div>
+                <label class="text-blue-700 font-bold mb-1.5 text-sm block">Contraseña <span class="text-slate-400 font-normal">(mínimo 10 caracteres)</span></label>
+                {{ form.password1 }}
+                {% for error in form.password1.errors %}<p class="campo-error">{{ error }}</p>{% endfor %}
+            </div>
+            <div>
+                <label class="text-blue-700 font-bold mb-1.5 text-sm block">Confirmar contraseña</label>
+                {{ form.password2 }}
+                {% for error in form.password2.errors %}<p class="campo-error">{{ error }}</p>{% endfor %}
+            </div>
+            <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-full shadow-lg transition-all mt-2">
+                Registrarme
+            </button>
+        </form>
+
+        <p class="text-center text-sm text-slate-500 mt-6">
+            ¿Ya tenés cuenta?
+            <a href="{% url 'narraciones:login' %}" class="text-blue-600 font-bold hover:underline">Iniciar sesión</a>
+        </p>
+        <p class="text-center text-[11px] text-slate-400 mt-4">
+            Al registrarte aceptás los
+            <a href="{% url 'narraciones:terminos' %}" target="_blank" class="underline hover:text-slate-600">Términos de Uso</a>
+            y la
+            <a href="{% url 'narraciones:privacidad' %}" target="_blank" class="underline hover:text-slate-600">Política de Privacidad</a>.
+        </p>
+    </div>
+
+    <script>
+        document.querySelectorAll('input').forEach(el => {
+            el.classList.add('w-full', 'p-3.5', 'border-2', 'border-blue-100', 'rounded-2xl', 'focus:border-blue-500', 'focus:ring-2', 'focus:ring-blue-100', 'outline-none', 'transition-all', 'text-slate-700', 'font-medium');
+        });
+    </script>
+
+    <!-- Botón de Ayuda flotante (RNF-02) -->
+    <a href="{% url 'narraciones:ayuda' %}" target="_blank" title="Ayuda"
+       class="fixed bottom-5 right-5 z-50 bg-amber-400 hover:bg-amber-500 text-slate-900 w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-2xl font-extrabold transition-transform hover:scale-110">
+        ?
+    </a>
+</body>
+</html>
