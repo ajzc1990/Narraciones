@@ -182,9 +182,21 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Media (pictogramas, portadas de cuentos, etc.): por defecto se guardan en el
+# filesystem local, lo cual sirve en desarrollo pero se PIERDE en cada deploy
+# en hostings con filesystem efímero (Heroku, Render, Railway). Definir
+# USE_S3=True + las variables AWS_* (ver .env.example) para usar almacenamiento
+# en la nube (S3 o compatible) antes de ir a producción con usuarios reales.
+USE_S3 = os.environ.get('USE_S3', 'False') == 'True'
+if USE_S3:
+    INSTALLED_APPS.append('storages')
+
 STORAGES = {
     'default': {
-        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        'BACKEND': (
+            'storages.backends.s3.S3Storage' if USE_S3
+            else 'django.core.files.storage.FileSystemStorage'
+        ),
     },
     'staticfiles': {
         'BACKEND': (
@@ -194,7 +206,20 @@ STORAGES = {
     },
 }
 
-MEDIA_URL = '/media/'
+if USE_S3:
+    AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
+    AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+    AWS_STORAGE_BUCKET_NAME = os.environ['AWS_STORAGE_BUCKET_NAME']
+    AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'sa-east-1')
+    AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL') or None
+    AWS_S3_CUSTOM_DOMAIN = os.environ.get('AWS_S3_CUSTOM_DOMAIN') or None
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_FILE_OVERWRITE = False
+    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN or f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"}/media/'
+else:
+    MEDIA_URL = '/media/'
+
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
