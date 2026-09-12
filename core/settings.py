@@ -68,6 +68,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'axes.middleware.AxesMiddleware',
+    'narraciones.middleware.JardinActivoMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'

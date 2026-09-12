@@ -62,6 +62,16 @@
                 <p class="text-teal-100 text-xs font-semibold">Gestionar niños registrados</p>
             </div>
         </a>
+
+        {% if es_admin_jardin %}
+        <a href="{% url 'narraciones:jardin_equipo' %}" class="boton-menu bg-purple-700 hover:bg-purple-800 text-white p-6 rounded-3xl shadow-lg flex items-center gap-4 sm:col-span-2">
+            <span class="text-3xl">🏫</span>
+            <div>
+                <p class="font-extrabold text-lg">Equipo de la institución</p>
+                <p class="text-purple-100 text-xs font-semibold">Gestionar docentes y administradores del jardín</p>
+            </div>
+        </a>
+        {% endif %}
     </main>
 
     <a href="{% url 'narraciones:landing' %}" class="mt-10 text-slate-400 text-xs font-bold hover:text-slate-600">⬅ Volver al inicio</a>

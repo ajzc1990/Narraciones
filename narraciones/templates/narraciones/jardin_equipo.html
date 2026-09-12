@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipo de la institución - Narraciones Interactivas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #f8fafc; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 gap-4">
+            <div class="text-center md:text-left">
+                <h1 class="text-2xl font-bold text-slate-800">🏫 Equipo de {{ jardin.razon_social }}</h1>
+                <p class="text-slate-500 mt-1 text-sm">Gestioná qué docentes tienen acceso y quiénes son administradores</p>
+            </div>
+        </div>
+
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+            <div class="px-5 py-3 rounded-2xl text-sm font-bold {% if message.tags == 'error' %}bg-rose-50 text-rose-600 border border-rose-100{% else %}bg-emerald-50 text-emerald-700 border border-emerald-100{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                            <th class="px-6 py-4">Nombre</th>
+                            <th class="px-6 py-4">Usuario</th>
+                            <th class="px-6 py-4 text-center">Rol</th>
+                            <th class="px-6 py-4 text-center">Estado</th>
+                            <th class="px-6 py-4 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-600 text-sm font-medium">
+                        {% for perfil in perfiles %}
+                        <tr class="hover:bg-blue-50/40 transition-colors">
+                            <td class="px-6 py-4 font-bold text-slate-800">{{ perfil.usuario.first_name }} {{ perfil.usuario.last_name }}</td>
+                            <td class="px-6 py-4">{{ perfil.usuario.username }}</td>
+                            <td class="px-6 py-4 text-center">
+                                {% if perfil.es_admin_jardin %}
+                                    <span class="bg-purple-50 text-purple-600 text-[11px] font-bold px-3 py-1 rounded-full">Administrador</span>
+                                {% else %}
+                                    <span class="bg-slate-100 text-slate-500 text-[11px] font-bold px-3 py-1 rounded-full">Docente</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                {% if perfil.usuario.is_active %}
+                                    <span class="bg-emerald-50 text-emerald-600 text-[11px] font-bold px-3 py-1 rounded-full">Activo</span>
+                                {% else %}
+                                    <span class="bg-rose-50 text-rose-500 text-[11px] font-bold px-3 py-1 rounded-full">Desactivado</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center justify-center gap-2 flex-wrap">
+                                    {% if perfil.es_admin_jardin %}
+                                    <form method="post" action="{% url 'narraciones:jardin_equipo_actualizar' usuario_id=perfil.usuario_id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="quitar_admin">
+                                        <button type="submit" class="text-xs font-bold text-slate-500 hover:underline">Quitar admin</button>
+                                    </form>
+                                    {% else %}
+                                    <form method="post" action="{% url 'narraciones:jardin_equipo_actualizar' usuario_id=perfil.usuario_id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="hacer_admin">
+                                        <button type="submit" class="text-xs font-bold text-purple-600 hover:underline">Hacer admin</button>
+                                    </form>
+                                    {% endif %}
+                                    {% if perfil.usuario.is_active %}
+                                    <form method="post" action="{% url 'narraciones:jardin_equipo_actualizar' usuario_id=perfil.usuario_id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="desactivar">
+                                        <button type="submit" class="text-xs font-bold text-rose-500 hover:underline">Desactivar</button>
+                                    </form>
+                                    {% else %}
+                                    <form method="post" action="{% url 'narraciones:jardin_equipo_actualizar' usuario_id=perfil.usuario_id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="reactivar">
+                                        <button type="submit" class="text-xs font-bold text-emerald-600 hover:underline">Reactivar</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center opacity-40">
+                                    <span class="text-5xl mb-3">🏫</span>
+                                    <p class="text-base font-bold text-slate-700">Todavía no hay docentes en esta institución</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-center">
+            <a href="{% url 'narraciones:menu' %}" class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-bold py-3 px-8 rounded-full transition-all shadow-md border border-slate-200 text-sm">
+                <span>⬅</span> VOLVER AL MENÚ
+            </a>
+        </div>
+    </div>
+
+    <!-- Botón de Ayuda flotante (RNF-02) -->
+    <a href="{% url 'narraciones:ayuda' %}" target="_blank" title="Ayuda"
+       class="fixed bottom-5 right-5 z-50 bg-amber-400 hover:bg-amber-500 text-slate-900 w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-2xl font-extrabold transition-transform hover:scale-110">
+        ?
+    </a>
+</body>
+</html>

@@ -14,7 +14,10 @@ class RegistroUsuarioForm(UserCreationForm):
     email = forms.EmailField(label="E-mail", required=True)
     jardin_nombre = forms.CharField(
         label="Jardín / Institución", max_length=150, required=True,
-        help_text="Si ya existe una cuenta con este nombre, te unís a esa institución; si no, se crea una nueva."
+        help_text=(
+            "Si ya existe una cuenta con este nombre, te unís a esa institución. Si no, se crea una nueva "
+            "y quedará pendiente de aprobación hasta que la validemos (te contactaremos)."
+        )
     )
 
     class Meta:
@@ -34,11 +37,15 @@ class RegistroUsuarioForm(UserCreationForm):
         usuario.email = self.cleaned_data['email']
         if commit:
             usuario.save()
-            jardin, _ = Jardin.objects.get_or_create(
+            jardin, creado = Jardin.objects.get_or_create(
                 razon_social__iexact=self.cleaned_data['jardin_nombre'],
-                defaults={'razon_social': self.cleaned_data['jardin_nombre']}
+                defaults={'razon_social': self.cleaned_data['jardin_nombre'], 'activo': False}
             )
-            PerfilUsuario.objects.create(usuario=usuario, edad=self.cleaned_data['edad'], jardin=jardin)
+            PerfilUsuario.objects.create(
+                usuario=usuario, edad=self.cleaned_data['edad'], jardin=jardin,
+                # Quien da de alta una institución nueva queda como su administrador.
+                es_admin_jardin=creado,
+            )
         return usuario
 
 

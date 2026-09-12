@@ -53,13 +53,18 @@ class RegistroLoginTests(TestCase):
         self.assertFalse(User.objects.filter(username='anatest').exists())
 
     def test_registro_valido_crea_usuario_y_loguea_automaticamente(self):
-        response = self.client.post(reverse('narraciones:registro'), self._datos_registro())
-        self.assertRedirects(response, reverse('narraciones:menu'))
+        # La institución es nueva: queda pendiente de aprobación (el redirect a /menu/
+        # del view termina en la pantalla de "pendiente" por el middleware de gating).
+        response = self.client.post(reverse('narraciones:registro'), self._datos_registro(), follow=True)
+        self.assertRedirects(response, reverse('narraciones:jardin_pendiente'))
         self.assertTrue(User.objects.filter(username='anatest').exists())
         usuario = User.objects.get(username='anatest')
         self.assertTrue(hasattr(usuario, 'perfil'))
         self.assertEqual(usuario.perfil.edad, 30)
         self.assertEqual(usuario.perfil.jardin.razon_social, 'Jardín Solcito')
+        self.assertFalse(usuario.perfil.jardin.activo)
+        # Quien da de alta una institución nueva queda como su administrador.
+        self.assertTrue(usuario.perfil.es_admin_jardin)
 
     def test_dos_usuarios_con_mismo_nombre_de_jardin_comparten_institucion(self):
         self.client.post(reverse('narraciones:registro'), self._datos_registro(
@@ -342,3 +347,102 @@ class AuditoriaTests(TestCase):
         nino = Nino.objects.create(nombre='A', apellido='Exportar', edad=5, dni='997')
         self.client.get(reverse('narraciones:exportar_pdf', args=[nino.id]))
         self.assertTrue(RegistroAuditoria.objects.filter(accion='exportar_pdf', detalle__contains='997').exists())
+
+
+class JardinPendienteTests(TestCase):
+    """Alta de institución por autoservicio: queda inactiva hasta que un admin la aprueba."""
+
+    def setUp(self):
+        self.jardin = Jardin.objects.create(razon_social='Jardín Nuevo', activo=False)
+        self.usuario = User.objects.create_user('pendiente', password='ContraseñaSegura123')
+        PerfilUsuario.objects.create(usuario=self.usuario, edad=30, jardin=self.jardin, es_admin_jardin=True)
+        self.client.force_login(self.usuario)
+
+    def test_usuario_de_jardin_pendiente_no_puede_usar_la_app(self):
+        response = self.client.get(reverse('narraciones:menu'))
+        self.assertRedirects(response, reverse('narraciones:jardin_pendiente'))
+
+    def test_usuario_de_jardin_pendiente_puede_ver_la_pantalla_de_espera(self):
+        response = self.client.get(reverse('narraciones:jardin_pendiente'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Jardín Nuevo')
+
+    def test_tras_aprobar_el_jardin_el_usuario_recupera_el_acceso(self):
+        self.jardin.aprobar()
+        response = self.client.get(reverse('narraciones:menu'))
+        self.assertEqual(response.status_code, 200)
+
+
+class JardinEquipoTests(TestCase):
+    """Panel del administrador de institución: gestión de docentes del propio jardín."""
+
+    def setUp(self):
+        self.jardin = Jardin.objects.create(razon_social='Jardín Equipo', activo=True)
+        self.admin = User.objects.create_user('directora', password='ContraseñaSegura123')
+        self.perfil_admin = PerfilUsuario.objects.create(
+            usuario=self.admin, edad=40, jardin=self.jardin, es_admin_jardin=True
+        )
+        self.docente = User.objects.create_user('docente', password='ContraseñaSegura123')
+        self.perfil_docente = PerfilUsuario.objects.create(
+            usuario=self.docente, edad=28, jardin=self.jardin, es_admin_jardin=False
+        )
+
+    def test_docente_no_puede_acceder_al_panel_de_equipo(self):
+        self.client.force_login(self.docente)
+        response = self.client.get(reverse('narraciones:jardin_equipo'))
+        self.assertRedirects(response, reverse('narraciones:menu'))
+
+    def test_admin_ve_a_los_docentes_de_su_jardin(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('narraciones:jardin_equipo'))
+        self.assertContains(response, 'docente')
+
+    def test_admin_puede_promover_a_otro_docente(self):
+        self.client.force_login(self.admin)
+        self.client.post(
+            reverse('narraciones:jardin_equipo_actualizar', args=[self.docente.id]),
+            {'accion': 'hacer_admin'},
+        )
+        self.perfil_docente.refresh_from_db()
+        self.assertTrue(self.perfil_docente.es_admin_jardin)
+
+    def test_admin_puede_desactivar_a_un_docente(self):
+        self.client.force_login(self.admin)
+        self.client.post(
+            reverse('narraciones:jardin_equipo_actualizar', args=[self.docente.id]),
+            {'accion': 'desactivar'},
+        )
+        self.docente.refresh_from_db()
+        self.assertFalse(self.docente.is_active)
+
+    def test_admin_no_puede_desactivarse_a_si_mismo(self):
+        self.client.force_login(self.admin)
+        self.client.post(
+            reverse('narraciones:jardin_equipo_actualizar', args=[self.admin.id]),
+            {'accion': 'desactivar'},
+        )
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.is_active)
+
+    def test_admin_no_puede_quitarse_el_rol_a_si_mismo(self):
+        self.client.force_login(self.admin)
+        self.client.post(
+            reverse('narraciones:jardin_equipo_actualizar', args=[self.admin.id]),
+            {'accion': 'quitar_admin'},
+        )
+        self.perfil_admin.refresh_from_db()
+        self.assertTrue(self.perfil_admin.es_admin_jardin)
+
+    def test_no_puede_actuar_sobre_un_usuario_de_otro_jardin(self):
+        otro_jardin = Jardin.objects.create(razon_social='Otro Jardín', activo=True)
+        ajeno = User.objects.create_user('ajeno', password='ContraseñaSegura123')
+        PerfilUsuario.objects.create(usuario=ajeno, edad=30, jardin=otro_jardin)
+
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('narraciones:jardin_equipo_actualizar', args=[ajeno.id]),
+            {'accion': 'desactivar'},
+        )
+        self.assertEqual(response.status_code, 404)
+        ajeno.refresh_from_db()
+        self.assertTrue(ajeno.is_active)

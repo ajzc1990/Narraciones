@@ -20,8 +20,11 @@ class RegistroAuditoriaAdmin(admin.ModelAdmin):
 
 @admin.register(Jardin)
 class JardinAdmin(admin.ModelAdmin):
-    list_display = ('razon_social', 'direccion', 'telefono', 'total_usuarios', 'total_ninos', 'creado_en')
+    list_display = ('razon_social', 'activo', 'direccion', 'telefono', 'total_usuarios', 'total_ninos', 'creado_en')
+    list_filter = ('activo',)
     search_fields = ('razon_social', 'cuil')
+    readonly_fields = ('aprobado_en',)
+    actions = ['aprobar_jardines']
 
     def total_usuarios(self, obj):
         return obj.usuarios.count()
@@ -31,11 +34,20 @@ class JardinAdmin(admin.ModelAdmin):
         return obj.ninos.count()
     total_ninos.short_description = 'Niños'
 
+    @admin.action(description="Aprobar instituciones seleccionadas (habilita el acceso a sus usuarios)")
+    def aprobar_jardines(self, request, queryset):
+        pendientes = queryset.filter(activo=False)
+        cantidad = pendientes.count()
+        for jardin in pendientes:
+            jardin.aprobar()
+        self.message_user(request, f"{cantidad} institución(es) aprobada(s).")
+
 
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(admin.ModelAdmin):
-    list_display = ('usuario', 'edad', 'jardin')
-    list_filter = ('jardin',)
+    list_display = ('usuario', 'edad', 'jardin', 'es_admin_jardin')
+    list_filter = ('jardin', 'es_admin_jardin')
+    list_editable = ('es_admin_jardin',)
     search_fields = ('usuario__username', 'usuario__first_name', 'usuario__last_name')
 
 

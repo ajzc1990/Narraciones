@@ -4,8 +4,10 @@ from django.core.paginator import Paginator
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_POST, require_GET, require_http_methods
+from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.db.models import Q
 from django.utils.text import slugify
 from reportlab.pdfgen import canvas
@@ -13,7 +15,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import cm
 
-from .models import Pictograma, Sinonimo, Cuento, Nino, ResultadoNarracion, RegistroAuditoria
+from .models import Pictograma, Sinonimo, Cuento, Nino, ResultadoNarracion, RegistroAuditoria, PerfilUsuario
 from .forms import RegistroUsuarioForm, NinoForm
 from .ml_pictogramas import predecir_pictograma
 
@@ -40,10 +42,78 @@ def _jardin_de(usuario):
     return perfil.jardin if perfil else None
 
 
+def _es_admin_jardin(usuario):
+    perfil = getattr(usuario, 'perfil', None)
+    return bool(perfil and perfil.es_admin_jardin)
+
+
 @login_required
 def menu(request):
     """Menú Principal tras iniciar sesión."""
-    return render(request, 'narraciones/menu.html', {'jardin': _jardin_de(request.user)})
+    return render(request, 'narraciones/menu.html', {
+        'jardin': _jardin_de(request.user),
+        'es_admin_jardin': _es_admin_jardin(request.user),
+    })
+
+
+@login_required
+def jardin_pendiente(request):
+    """
+    Se muestra en vez de la app mientras la institución del usuario está
+    pendiente de aprobación (alta de institución por autoservicio).
+    """
+    jardin = _jardin_de(request.user)
+    if jardin is None or jardin.activo:
+        return redirect('narraciones:menu')
+    return render(request, 'narraciones/jardin_pendiente.html', {'jardin': jardin})
+
+
+@login_required
+@require_GET
+def jardin_equipo(request):
+    """Panel del administrador de institución: ver y gestionar los docentes de su jardín."""
+    jardin = _jardin_de(request.user)
+    if not _es_admin_jardin(request.user):
+        messages.error(request, "Esa sección es solo para el administrador de la institución.")
+        return redirect('narraciones:menu')
+
+    perfiles = (
+        jardin.usuarios.select_related('usuario').order_by('usuario__first_name', 'usuario__last_name')
+        if jardin else []
+    )
+    return render(request, 'narraciones/jardin_equipo.html', {'jardin': jardin, 'perfiles': perfiles})
+
+
+@login_required
+@require_POST
+def jardin_equipo_actualizar(request, usuario_id):
+    """Promueve/revoca administrador o activa/desactiva el acceso de un docente de la propia institución."""
+    if not _es_admin_jardin(request.user):
+        messages.error(request, "Esa acción es solo para el administrador de la institución.")
+        return redirect('narraciones:menu')
+
+    jardin = _jardin_de(request.user)
+    perfil = get_object_or_404(PerfilUsuario, usuario_id=usuario_id, jardin=jardin)
+    accion = request.POST.get('accion')
+
+    if accion == 'hacer_admin':
+        perfil.es_admin_jardin = True
+        perfil.save(update_fields=['es_admin_jardin'])
+    elif accion == 'quitar_admin':
+        if perfil.usuario_id == request.user.id:
+            messages.error(request, "No podés quitarte a vos mismo el rol de administrador.")
+            return redirect('narraciones:jardin_equipo')
+        perfil.es_admin_jardin = False
+        perfil.save(update_fields=['es_admin_jardin'])
+    elif accion == 'desactivar':
+        if perfil.usuario_id == request.user.id:
+            messages.error(request, "No podés desactivar tu propia cuenta.")
+            return redirect('narraciones:jardin_equipo')
+        User.objects.filter(id=perfil.usuario_id).update(is_active=False)
+    elif accion == 'reactivar':
+        User.objects.filter(id=perfil.usuario_id).update(is_active=True)
+
+    return redirect('narraciones:jardin_equipo')
 
 
 @login_required

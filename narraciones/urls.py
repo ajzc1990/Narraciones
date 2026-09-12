@@ -20,6 +20,11 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(next_page='narraciones:landing'), name='logout'),
     path('registro/', views.registro, name='registro'),
 
+    # Institución pendiente de aprobación / administración del equipo docente
+    path('institucion/pendiente/', views.jardin_pendiente, name='jardin_pendiente'),
+    path('institucion/equipo/', views.jardin_equipo, name='jardin_equipo'),
+    path('institucion/equipo/<int:usuario_id>/actualizar/', views.jardin_equipo_actualizar, name='jardin_equipo_actualizar'),
+
     # Recuperación de contraseña
     path('password-reset/', auth_views.PasswordResetView.as_view(
         template_name='narraciones/password_reset_form.html',

@@ -9,6 +9,15 @@ class Jardin(models.Model):
     direccion = models.CharField(max_length=150, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     cuil = models.CharField(max_length=20, blank=True)
+    activo = models.BooleanField(
+        default=True,
+        verbose_name="Activo",
+        help_text=(
+            "Una institución que se autoregistra queda inactiva hasta que un administrador "
+            "la aprueba; mientras tanto sus usuarios no pueden usar la aplicación."
+        ),
+    )
+    aprobado_en = models.DateTimeField(null=True, blank=True, editable=False)
     creado_en = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -19,12 +28,23 @@ class Jardin(models.Model):
     def __str__(self):
         return self.razon_social
 
+    def aprobar(self):
+        from django.utils import timezone
+        self.activo = True
+        self.aprobado_en = timezone.now()
+        self.save(update_fields=['activo', 'aprobado_en'])
+
 
 class PerfilUsuario(models.Model):
     """Datos adicionales del tutor/usuario registrado (RF-02)."""
     usuario = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='perfil')
     edad = models.PositiveSmallIntegerField(validators=[MinValueValidator(16), MaxValueValidator(120)])
     jardin = models.ForeignKey(Jardin, on_delete=models.SET_NULL, null=True, blank=True, related_name='usuarios')
+    es_admin_jardin = models.BooleanField(
+        default=False,
+        verbose_name="Administrador de la institución",
+        help_text="Puede gestionar los demás usuarios (docentes) de su jardín, además de niños y sesiones.",
+    )
 
     class Meta:
         verbose_name = "Perfil de Usuario"
