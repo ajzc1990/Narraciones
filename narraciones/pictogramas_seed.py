@@ -137,6 +137,22 @@ CUENTOS_DATA = {
 }
 
 
+# Fuentes de emoji a color en formato bitmap (como Noto Color Emoji en Linux)
+# solo traen unos pocos tamaños fijos ("strikes"); pedir cualquier otro tira
+# OSError. Se prueban tamaños conocidos hasta encontrar uno que la fuente
+# soporte, y despues se escala el resultado al tamaño que realmente se quiere.
+_TAMANIOS_EMOJI_CANDIDATOS = [136, 128, 109, 96, 72, 64, 48, 32]
+
+
+def _cargar_fuente_emoji(tamanio_deseado):
+    for tamanio in [tamanio_deseado] + _TAMANIOS_EMOJI_CANDIDATOS:
+        try:
+            return ImageFont.truetype(FUENTE_EMOJI, tamanio), tamanio
+        except OSError:
+            continue
+    return None, None
+
+
 def _dibujar_pictograma(emoji: str, color_fondo: str) -> ContentFile:
     """Genera un PNG cuadrado con fondo pastel redondeado y el emoji centrado."""
     img = Image.new("RGBA", (TAMANIO, TAMANIO), (255, 255, 255, 0))
@@ -148,13 +164,22 @@ def _dibujar_pictograma(emoji: str, color_fondo: str) -> ContentFile:
         fill=color_fondo,
     )
     centro = TAMANIO // 2
-    if FUENTE_EMOJI:
-        fuente = ImageFont.truetype(FUENTE_EMOJI, int(TAMANIO * 0.55))
+    tamanio_emoji = int(TAMANIO * 0.55)
+    fuente, tamanio_real = _cargar_fuente_emoji(tamanio_emoji) if FUENTE_EMOJI else (None, None)
+
+    if fuente and tamanio_real == tamanio_emoji:
         draw.text((centro, centro + 6), emoji, font=fuente, embedded_color=True, anchor="mm")
+    elif fuente:
+        glifo = Image.new("RGBA", (tamanio_real, tamanio_real), (255, 255, 255, 0))
+        ImageDraw.Draw(glifo).text(
+            (tamanio_real // 2, tamanio_real // 2), emoji, font=fuente, embedded_color=True, anchor="mm"
+        )
+        glifo = glifo.resize((tamanio_emoji, tamanio_emoji), Image.LANCZOS)
+        img.alpha_composite(glifo, (centro - tamanio_emoji // 2, centro - tamanio_emoji // 2 + 6))
     else:
         # Sin fuente de emoji instalada: placeholder simple (no rompe la siembra).
-        fuente = ImageFont.load_default(size=int(TAMANIO * 0.35))
-        draw.text((centro, centro), "?", font=fuente, fill="#334155", anchor="mm")
+        fuente_generica = ImageFont.load_default(size=int(TAMANIO * 0.35))
+        draw.text((centro, centro), "?", font=fuente_generica, fill="#334155", anchor="mm")
 
     buffer = io.BytesIO()
     img.save(buffer, format="PNG")
