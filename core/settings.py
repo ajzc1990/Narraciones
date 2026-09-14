@@ -44,6 +44,10 @@ if not DEBUG and SECRET_KEY == _SECRET_KEY_INSEGURA_POR_DEFECTO:
 
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()]
 
+# Orígenes confiables para CSRF (necesario detrás de un proxy HTTPS): cada
+# valor debe incluir el esquema, ej. "https://narracionesinteractivas.online".
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
+
 
 # Application definition
 
