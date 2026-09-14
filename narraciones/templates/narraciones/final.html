@@ -188,11 +188,17 @@
             const canvas = document.getElementById('storyboard-canvas');
             const ctx = canvas.getContext('2d');
 
+            // Para medir el ancho real disponible (el de la tarjeta, no el de toda la
+            // ventana) hay que sacar la sección de "hidden" (display:none no tiene
+            // tamaño), pero la ocultamos con visibility para no mostrarla a medio dibujar.
+            seccion.classList.remove('hidden');
+            seccion.style.visibility = 'hidden';
+
             const CELDA = 140;
             const ESPACIO = 16;
-            // En pantallas angostas (celular) usamos menos columnas para que el
-            // storyboard entre sin necesidad de hacer scroll horizontal.
-            const anchoDisponible = Math.max(window.innerWidth - 64, CELDA + ESPACIO * 2);
+            // Usamos el ancho real del contenedor (ya descuenta el padding de la
+            // tarjeta) para que el storyboard entre siempre sin scroll horizontal.
+            const anchoDisponible = Math.max(canvas.parentElement.clientWidth, CELDA + ESPACIO * 2);
             const columnasQueEntran = Math.floor((anchoDisponible - ESPACIO) / (CELDA + ESPACIO)) || 1;
             const COLUMNAS = Math.min(5, columnasQueEntran, secuencia.length) || 1;
             const FILAS = Math.ceil(secuencia.length / COLUMNAS);
@@ -259,7 +265,7 @@
                 }
             });
 
-            seccion.classList.remove('hidden');
+            seccion.style.visibility = '';
         }
 
         window.addEventListener('DOMContentLoaded', () => {
