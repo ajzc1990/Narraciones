@@ -13,7 +13,17 @@ from PIL import Image, ImageDraw, ImageFont
 
 from .models import Pictograma, Sinonimo, Cuento
 
-FUENTE_EMOJI = r"C:\Windows\Fonts\seguiemj.ttf"
+# Fuentes de emoji a color: se prueba cada ruta conocida según el sistema
+# operativo (Windows en desarrollo, Linux/Noto en el servidor) y se usa la
+# primera que exista. Si ninguna está instalada, se dibuja sin emoji en vez
+# de romper la siembra de pictogramas.
+_RUTAS_FUENTE_EMOJI = [
+    r"C:\Windows\Fonts\seguiemj.ttf",
+    "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
+    "/usr/share/fonts/noto/NotoColorEmoji.ttf",
+    "/System/Library/Fonts/Apple Color Emoji.ttc",
+]
+FUENTE_EMOJI = next((ruta for ruta in _RUTAS_FUENTE_EMOJI if os.path.exists(ruta)), None)
 TAMANIO = 300
 
 COLORES_FONDO = [
@@ -137,9 +147,14 @@ def _dibujar_pictograma(emoji: str, color_fondo: str) -> ContentFile:
         radius=48,
         fill=color_fondo,
     )
-    fuente = ImageFont.truetype(FUENTE_EMOJI, int(TAMANIO * 0.55))
     centro = TAMANIO // 2
-    draw.text((centro, centro + 6), emoji, font=fuente, embedded_color=True, anchor="mm")
+    if FUENTE_EMOJI:
+        fuente = ImageFont.truetype(FUENTE_EMOJI, int(TAMANIO * 0.55))
+        draw.text((centro, centro + 6), emoji, font=fuente, embedded_color=True, anchor="mm")
+    else:
+        # Sin fuente de emoji instalada: placeholder simple (no rompe la siembra).
+        fuente = ImageFont.load_default(size=int(TAMANIO * 0.35))
+        draw.text((centro, centro), "?", font=fuente, fill="#334155", anchor="mm")
 
     buffer = io.BytesIO()
     img.save(buffer, format="PNG")
