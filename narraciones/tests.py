@@ -458,3 +458,64 @@ class JardinEquipoTests(TestCase):
         self.assertEqual(response.status_code, 404)
         ajeno.refresh_from_db()
         self.assertTrue(ajeno.is_active)
+
+
+class DemoLimiteLoginTests(TestCase):
+    """Cuenta de demostración compartida: se bloquea tras superar los inicios de sesión permitidos."""
+
+    def setUp(self):
+        self.usuario = User.objects.create_user('cuenta_demo', password='ContraseñaSegura123')
+        self.perfil = PerfilUsuario.objects.create(usuario=self.usuario, edad=30, limite_logins_demo=3)
+
+    def _loguear_y_cerrar(self):
+        # force_login evita pasar por AxesBackend (que exige un request real a
+        # authenticate()), pero sigue emitiendo la señal user_logged_in que
+        # cuenta los usos, igual que un login real por formulario.
+        self.client.force_login(self.usuario)
+        self.client.logout()
+
+    def test_permite_usar_la_cuenta_hasta_el_limite(self):
+        for _ in range(3):
+            self.client.force_login(self.usuario)
+            response = self.client.get(reverse('narraciones:menu'))
+            self.assertEqual(response.status_code, 200)
+            self.client.logout()
+
+    def test_bloquea_al_superar_el_limite(self):
+        for _ in range(3):
+            self._loguear_y_cerrar()
+
+        self.client.force_login(self.usuario)
+        response = self.client.get(reverse('narraciones:menu'))
+        self.assertRedirects(response, reverse('narraciones:demo_agotada'))
+
+    def test_pantalla_de_demo_agotada_se_puede_ver_y_cerrar_sesion(self):
+        for _ in range(3):
+            self._loguear_y_cerrar()
+        self.client.force_login(self.usuario)
+
+        response = self.client.get(reverse('narraciones:demo_agotada'))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(reverse('narraciones:logout'))
+        self.assertRedirects(response, reverse('narraciones:landing'))
+
+    def test_cuenta_sin_limite_configurado_no_se_bloquea(self):
+        otro = User.objects.create_user('sin_limite', password='ContraseñaSegura123')
+        PerfilUsuario.objects.create(usuario=otro, edad=30)
+        for _ in range(10):
+            self.client.force_login(otro)
+            self.client.logout()
+        self.client.force_login(otro)
+        response = self.client.get(reverse('narraciones:menu'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_puede_reiniciar_el_contador(self):
+        for _ in range(3):
+            self._loguear_y_cerrar()
+        self.perfil.refresh_from_db()
+        self.assertEqual(self.perfil.logins_demo_usados, 3)
+
+        PerfilUsuario.objects.filter(id=self.perfil.id).update(logins_demo_usados=0)
+        self.perfil.refresh_from_db()
+        self.assertFalse(self.perfil.demo_agotada)

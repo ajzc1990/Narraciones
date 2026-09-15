@@ -22,6 +22,7 @@ urlpatterns = [
 
     # Institución pendiente de aprobación / administración del equipo docente
     path('institucion/pendiente/', views.jardin_pendiente, name='jardin_pendiente'),
+    path('demo-agotada/', views.demo_agotada, name='demo_agotada'),
     path('institucion/equipo/', views.jardin_equipo, name='jardin_equipo'),
     path('institucion/equipo/<int:usuario_id>/actualizar/', views.jardin_equipo_actualizar, name='jardin_equipo_actualizar'),
 

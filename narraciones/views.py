@@ -69,6 +69,15 @@ def jardin_pendiente(request):
 
 
 @login_required
+def demo_agotada(request):
+    """Se muestra en vez de la app cuando una cuenta de demostración agotó sus usos permitidos."""
+    perfil = getattr(request.user, 'perfil', None)
+    if perfil is None or not perfil.demo_agotada:
+        return redirect('narraciones:menu')
+    return render(request, 'narraciones/demo_agotada.html', {'perfil': perfil})
+
+
+@login_required
 @require_GET
 def jardin_equipo(request):
     """Panel del administrador de institución: ver y gestionar los docentes de su jardín."""

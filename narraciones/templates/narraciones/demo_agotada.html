@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo agotada - Narraciones Interactivas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #f0f9ff; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl border border-purple-100 text-center">
+        <span class="text-5xl block mb-4">✨</span>
+        <h1 class="text-xl font-extrabold text-slate-800 mb-2">¡Ya probaste la demo!</h1>
+        <p class="text-slate-500 text-sm mb-6">
+            Esta cuenta de demostración se puede usar hasta {{ perfil.limite_logins_demo }} veces, y ya usaste todas.
+            Escribinos para conocer los planes y seguir usando la aplicación sin límites.
+        </p>
+        <div class="flex flex-col gap-3">
+            <form method="post" action="{% url 'narraciones:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all text-sm cursor-pointer">
+                    Cerrar sesión
+                </button>
+            </form>
+            <a href="{% url 'narraciones:landing' %}" class="text-slate-400 text-sm font-bold hover:underline">⬅ Volver al inicio</a>
+        </div>
+    </div>
+</body>
+</html>

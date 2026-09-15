@@ -45,10 +45,17 @@ class JardinAdmin(admin.ModelAdmin):
 
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(admin.ModelAdmin):
-    list_display = ('usuario', 'edad', 'jardin', 'es_admin_jardin')
+    list_display = ('usuario', 'edad', 'jardin', 'es_admin_jardin', 'limite_logins_demo', 'logins_demo_usados')
     list_filter = ('jardin', 'es_admin_jardin')
-    list_editable = ('es_admin_jardin',)
+    list_editable = ('es_admin_jardin', 'limite_logins_demo')
+    readonly_fields = ('logins_demo_usados',)
     search_fields = ('usuario__username', 'usuario__first_name', 'usuario__last_name')
+    actions = ['reiniciar_usos_demo']
+
+    @admin.action(description="Reiniciar contador de usos de demo (vuelve a 0)")
+    def reiniciar_usos_demo(self, request, queryset):
+        actualizados = queryset.update(logins_demo_usados=0)
+        self.message_user(request, f"Contador reiniciado en {actualizados} perfil(es).")
 
 
 # --- INLINE DE SINÓNIMOS ---

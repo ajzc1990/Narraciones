@@ -45,6 +45,16 @@ class PerfilUsuario(models.Model):
         verbose_name="Administrador de la institución",
         help_text="Puede gestionar los demás usuarios (docentes) de su jardín, además de niños y sesiones.",
     )
+    limite_logins_demo = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        verbose_name="Límite de inicios de sesión (demo)",
+        help_text=(
+            "Si se completa, esta cuenta queda bloqueada despues de iniciar sesion esta "
+            "cantidad de veces. Pensado para compartir un usuario de demostracion a varios "
+            "prospectos sin que se use indefinidamente. Vacio = sin límite."
+        ),
+    )
+    logins_demo_usados = models.PositiveSmallIntegerField(default=0, editable=False)
 
     class Meta:
         verbose_name = "Perfil de Usuario"
@@ -52,6 +62,11 @@ class PerfilUsuario(models.Model):
 
     def __str__(self):
         return f"Perfil de {self.usuario.username}"
+
+    @property
+    def demo_agotada(self):
+        """True si esta cuenta tiene un límite de logins de demo y ya lo superó."""
+        return self.limite_logins_demo is not None and self.logins_demo_usados > self.limite_logins_demo
 
 
 class Pictograma(models.Model):
