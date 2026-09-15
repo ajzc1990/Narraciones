@@ -26,7 +26,10 @@
         </div>
         <div class="text-right">
             <p class="text-sm font-bold text-slate-700">Hola, {{ user.first_name|default:user.username }} 👋</p>
-            <a href="{% url 'narraciones:logout' %}" class="text-xs text-rose-500 font-bold hover:underline">Cerrar sesión</a>
+            <form method="post" action="{% url 'narraciones:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="text-xs text-rose-500 font-bold hover:underline bg-transparent border-0 p-0 cursor-pointer">Cerrar sesión</button>
+            </form>
         </div>
     </header>
 

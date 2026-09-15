@@ -20,9 +20,12 @@
             normalidad.
         </p>
         <div class="flex flex-col gap-3">
-            <a href="{% url 'narraciones:logout' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all text-sm">
-                Cerrar sesión
-            </a>
+            <form method="post" action="{% url 'narraciones:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all text-sm cursor-pointer">
+                    Cerrar sesión
+                </button>
+            </form>
             <a href="{% url 'narraciones:landing' %}" class="text-slate-400 text-sm font-bold hover:underline">⬅ Volver al inicio</a>
         </div>
     </div>

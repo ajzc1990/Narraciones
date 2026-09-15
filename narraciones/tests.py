@@ -84,6 +84,18 @@ class RegistroLoginTests(TestCase):
             self.assertEqual(response.status_code, 302, f'{nombre_url} debería redirigir sin sesión')
             self.assertIn(reverse('narraciones:login'), response.url)
 
+    def test_cerrar_sesion_es_por_post_no_por_get(self):
+        """Django rechaza logout por GET (405): los templates deben usar un form POST, no un <a href>."""
+        usuario = User.objects.create_user('paracerrar', password='ContraseñaSegura123')
+        self.client.force_login(usuario)
+
+        response = self.client.get(reverse('narraciones:logout'))
+        self.assertEqual(response.status_code, 405)
+
+        response = self.client.post(reverse('narraciones:logout'))
+        self.assertRedirects(response, reverse('narraciones:landing'))
+        self.assertNotIn('_auth_user_id', self.client.session)
+
 
 class NinoCRUDTests(TestCase):
     """RF-07: alta, modificación y baja de niños."""
