@@ -242,3 +242,25 @@ if not DEBUG:
     # termina la conexión HTTPS y reenvía por HTTP con esta cabecera.
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     X_FRAME_OPTIONS = 'DENY'
+
+
+# Logging: por defecto Django solo manda los errores 500 por mail_admins (que
+# acá no está configurado), así que sin esto un error en producción no queda
+# registrado en ningún lado. Se manda también a stdout/stderr, que systemd
+# captura y journalctl -u narraciones puede mostrar.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
