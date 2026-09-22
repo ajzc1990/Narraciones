@@ -116,6 +116,22 @@
             <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Transcripción en tiempo real:</span>
             <p id="live-speech-text" class="text-blue-600 font-semibold italic text-sm md:text-base">Escuchando voz...</p>
         </div>
+
+        <!-- Alternativa cuando el navegador no soporta reconocimiento de voz (ej. Safari/iPad) -->
+        <div id="entrada-manual-box" class="hidden bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl">
+            <label for="entrada-manual-input" class="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">
+                Tu navegador no reconoce voz: escribí lo que se va narrando
+            </label>
+            <div class="flex gap-2">
+                <input id="entrada-manual-input" type="text" disabled
+                    placeholder="Escribí una palabra o frase y presioná Enter"
+                    class="flex-1 p-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none text-sm disabled:bg-slate-100">
+                <button id="entrada-manual-btn" disabled
+                    class="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold px-5 rounded-xl text-sm transition-all">
+                    Agregar
+                </button>
+            </div>
+        </div>
     </main>
 
     <!-- Barra de Estado y Controles de Grabación -->
@@ -159,6 +175,9 @@
         const categoriaBadge = document.getElementById('categoria-badge');
         const liveSpeechBox = document.getElementById('live-speech-box');
         const liveSpeechText = document.getElementById('live-speech-text');
+        const entradaManualBox = document.getElementById('entrada-manual-box');
+        const entradaManualInput = document.getElementById('entrada-manual-input');
+        const entradaManualBtn = document.getElementById('entrada-manual-btn');
         const lienzo = document.getElementById('lienzo-pictogramas');
         const narrarLibreCheck = document.getElementById('narrar-libre-check');
         const guiaLibre = document.getElementById('guia-libre');
@@ -176,14 +195,30 @@
         // modelo de ML les asigne por error un pictograma parecido por
         // similitud de letras (ej. "una" coincidiendo con "Luna").
         const PALABRAS_VACIAS = new Set([
-            'que', 'pero', 'muy', 'cuando', 'era', 'eran', 'los', 'las', 'del', 'con',
+            'que', 'pero', 'muy', 'cuando', 'era', 'eran', 'habia', 'había', 'los', 'las', 'del', 'con',
             'sus', 'desde', 'también', 'nosotros', 'nosotras', 'ese', 'esa', 'esos', 'esas',
             'esto', 'esta', 'estos', 'estas', 'demás', 'varios', 'varias', 'uno', 'una', 'unos',
-            'unas', 'junto', 'juntos', 'luego', 'entonces', 'porque', 'como', 'para', 'donde',
+            'unas', 'vez', 'veces', 'junto', 'juntos', 'luego', 'entonces', 'porque', 'como', 'para', 'donde',
             'hacia', 'hasta', 'sobre', 'entre', 'todo', 'toda', 'todos', 'todas', 'otro', 'otra',
             'otros', 'otras', 'mismo', 'misma', 'tanto', 'tanta', 'algo', 'nada', 'alguien',
             'nadie', 'cada', 'mientras', 'aunque', 'sin', 'aqui', 'aquí', 'alli', 'allí',
         ]);
+
+        // Compartida entre el reconocimiento de voz y la entrada manual (fallback
+        // para navegadores sin soporte de voz): separa palabras, filtra
+        // puntuación, duplicados y palabras vacías, y consulta cada una.
+        function procesarPalabrasDeTexto(texto) {
+            const palabras = texto.toLowerCase()
+                .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()¿?¡!]/g, "")
+                .split(/\s+/);
+
+            palabras.forEach(palabra => {
+                if (palabra.length > 2 && !palabrasProcesadas.has(palabra) && !PALABRAS_VACIAS.has(palabra)) {
+                    buscarPictograma(palabra);
+                    palabrasProcesadas.add(palabra);
+                }
+            });
+        }
 
         function actualizarCuento() {
             const selectedOption = cuentoSelect.options[cuentoSelect.selectedIndex];
@@ -307,16 +342,7 @@
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     const texto = event.results[i][0].transcript;
                     if (event.results[i].isFinal) {
-                        const palabras = texto.toLowerCase()
-                            .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()¿?¡!]/g, "")
-                            .split(/\s+/);
-
-                        palabras.forEach(palabra => {
-                            if (palabra.length > 2 && !palabrasProcesadas.has(palabra) && !PALABRAS_VACIAS.has(palabra)) {
-                                buscarPictograma(palabra);
-                                palabrasProcesadas.add(palabra);
-                            }
-                        });
+                        procesarPalabrasDeTexto(texto);
                     } else {
                         transcripcionInterina += texto;
                     }
@@ -334,7 +360,96 @@
                 }
             };
         } else {
-            alert("Tu navegador no soporta reconocimiento de voz nativo. Recomendamos usar Google Chrome o Microsoft Edge.");
+            // Sin reconocimiento de voz nativo (ej. Safari/iPad): la docente
+            // escribe lo que se va narrando en vez de hablarlo.
+            entradaManualBox.classList.remove('hidden');
+
+            startBtn.onclick = () => {
+                if (!ninoSelect.value) {
+                    alert("Por favor, selecciona primero al alumno/a que va a narrar.");
+                    return;
+                }
+                palabrasProcesadas.clear();
+                secuenciaPictogramas = [];
+                lienzo.innerHTML = '';
+                grabandoActivo = true;
+                tiempoInicio = Date.now();
+
+                statusText.innerText = "ACTIVIDAD EN CURSO";
+                statusText.className = "font-bold text-emerald-600 uppercase text-xs tracking-wider";
+                dot.className = "w-3 h-3 bg-emerald-500 rounded-full";
+                startBtn.classList.add('hidden');
+                stopBtn.classList.remove('hidden');
+                ninoSelect.disabled = true;
+                cuentoSelect.disabled = true;
+                narrarLibreCheck.disabled = true;
+                entradaManualInput.disabled = false;
+                entradaManualBtn.disabled = false;
+                entradaManualInput.focus();
+            };
+
+            stopBtn.onclick = () => {
+                grabandoActivo = false;
+                const duracionSegundos = tiempoInicio ? Math.round((Date.now() - tiempoInicio) / 1000) : 0;
+
+                statusText.innerText = "SESIÓN FINALIZADA";
+                statusText.className = "font-bold text-slate-500 uppercase text-xs tracking-wider";
+                dot.className = "w-3 h-3 bg-slate-300 rounded-full";
+                startBtn.classList.remove('hidden');
+                stopBtn.classList.add('hidden');
+                ninoSelect.disabled = false;
+                cuentoSelect.disabled = modoLibre;
+                narrarLibreCheck.disabled = false;
+                entradaManualInput.disabled = true;
+                entradaManualBtn.disabled = true;
+
+                if (!ninoSelect.value) return;
+
+                try {
+                    sessionStorage.setItem('secuenciaPictogramas', JSON.stringify(secuenciaPictogramas));
+                } catch (e) {
+                    console.warn("No se pudo guardar la secuencia de pictogramas:", e);
+                }
+
+                if (modoLibre) {
+                    window.location.href = `{% url 'narraciones:finalizar_libre' %}?nino_id=${ninoSelect.value}&duracion=${duracionSegundos}`;
+                } else if (cuentoIdActual) {
+                    window.location.href = `{% url 'narraciones:finalizar_cuento' cuento_id=0 %}`
+                        .replace('0', cuentoIdActual) + `?nino_id=${ninoSelect.value}&duracion=${duracionSegundos}`;
+                }
+            };
+
+            const agregarTextoManual = () => {
+                const texto = entradaManualInput.value.trim();
+                if (texto) {
+                    procesarPalabrasDeTexto(texto);
+                }
+                entradaManualInput.value = '';
+                entradaManualInput.focus();
+            };
+
+            entradaManualBtn.onclick = agregarTextoManual;
+            entradaManualInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    agregarTextoManual();
+                }
+            });
+        }
+
+        // Aviso breve y no intrusivo cuando se escuchó/escribió una palabra pero
+        // no hay pictograma para ella (para que no parezca que la app "no
+        // escucha" cuando en realidad es que falta esa palabra en la biblioteca).
+        function mostrarPalabraNoEncontrada(palabra) {
+            const aviso = document.createElement('div');
+            aviso.className = "fixed bottom-24 right-5 z-50 bg-slate-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg opacity-0 transition-opacity duration-300";
+            aviso.textContent = `❓ "${palabra}" sin pictograma`;
+            document.body.appendChild(aviso);
+            requestAnimationFrame(() => { aviso.style.opacity = '1'; });
+            setTimeout(() => {
+                aviso.style.opacity = '0';
+                setTimeout(() => aviso.remove(), 300);
+            }, 1800);
         }
 
         async function buscarPictograma(palabra) {
@@ -345,6 +460,8 @@
                     if (data.encontrado) {
                         renderizarCardPictograma(data.url, data.nombre, data.tipo, data.origen, data.confianza);
                     }
+                } else if (response.status === 404) {
+                    mostrarPalabraNoEncontrada(palabra);
                 }
             } catch (error) {
                 console.error("Error al consultar pictograma:", error);

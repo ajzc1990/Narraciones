@@ -47,21 +47,61 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <!-- Buscador en tiempo real -->
-            <div class="lg:col-span-2 space-y-4">
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 no-print flex flex-col justify-center h-full">
-                    <label for="searchInput" class="block text-slate-700 font-bold mb-2 text-sm">🔍 Filtrar por Alumno o Cuento</label>
-                    <input type="text" id="searchInput" placeholder="Escribe el nombre del niño o título del cuento..." 
-                        class="w-full p-3.5 border-2 border-slate-100 rounded-2xl focus:border-blue-500 outline-none transition-all text-slate-700 text-sm font-medium">
+        <!-- Reporte agregado de la institución -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div class="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <h3 class="text-slate-700 font-bold mb-4 text-xs uppercase tracking-wider">📈 Actividad de los últimos 14 días</h3>
+                <div class="h-40">
+                    <canvas id="actividadChart"></canvas>
                 </div>
             </div>
-
-            <!-- Gráfico de Satisfacción -->
             <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center">
                 <h3 class="text-slate-700 font-bold mb-3 text-center text-xs uppercase tracking-wider">Satisfacción General</h3>
                 <div class="w-28 h-28 relative flex items-center justify-center">
                     <canvas id="satisfactionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <h3 class="text-slate-700 font-bold mb-4 text-xs uppercase tracking-wider">👶 Alumnos con más sesiones</h3>
+                <div class="space-y-2">
+                    {% for fila in top_ninos %}
+                    <div class="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-2.5">
+                        <span class="text-sm font-bold text-slate-700">{{ fila.nino__nombre }} {{ fila.nino__apellido }}</span>
+                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">{{ fila.sesiones }} sesion{{ fila.sesiones|pluralize:"es" }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-slate-400 text-sm italic">Todavía no hay sesiones registradas.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <h3 class="text-slate-700 font-bold mb-4 text-xs uppercase tracking-wider">📖 Cuentos más narrados</h3>
+                <div class="space-y-2">
+                    {% for fila in top_cuentos %}
+                    <div class="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-2.5">
+                        <span class="text-sm font-bold text-slate-700">{{ fila.cuento__titulo }}</span>
+                        <span class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">{{ fila.sesiones }} sesion{{ fila.sesiones|pluralize:"es" }}</span>
+                            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">👍 {{ fila.likes }}</span>
+                        </span>
+                    </div>
+                    {% empty %}
+                    <p class="text-slate-400 text-sm italic">Todavía no hay sesiones registradas.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Buscador en tiempo real -->
+            <div class="lg:col-span-3 space-y-4">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 no-print flex flex-col justify-center h-full">
+                    <label for="searchInput" class="block text-slate-700 font-bold mb-2 text-sm">🔍 Filtrar por Alumno o Cuento</label>
+                    <input type="text" id="searchInput" placeholder="Escribe el nombre del niño o título del cuento..."
+                        class="w-full p-3.5 border-2 border-slate-100 rounded-2xl focus:border-blue-500 outline-none transition-all text-slate-700 text-sm font-medium">
                 </div>
             </div>
         </div>
@@ -275,7 +315,31 @@
             }
         }
 
+        const sesionesPorDia = JSON.parse('{{ sesiones_por_dia_json|default:"[]"|escapejs }}');
+
         window.onload = function() {
+            new Chart(document.getElementById('actividadChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: sesionesPorDia.map(d => d.fecha),
+                    datasets: [{
+                        label: 'Sesiones',
+                        data: sesionesPorDia.map(d => d.sesiones),
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6,
+                        maxBarThickness: 28,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } },
+                    },
+                }
+            });
+
             const ctx = document.getElementById('satisfactionChart').getContext('2d');
             const initialDislikes = Math.max(0, initialTotal - initialLikes);
             

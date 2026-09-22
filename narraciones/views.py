@@ -8,8 +8,11 @@ from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db.models import Q
+from django.db.models import Count, Q
+from django.db.models.functions import TruncDate
+from django.utils import timezone
 from django.utils.text import slugify
+from datetime import timedelta
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -319,13 +322,55 @@ def historial_sesiones(request):
     likes = resultados.filter(le_gusto=True).count()
     porcentaje_positivo = round((likes / total * 100), 1) if total > 0 else 0
 
+    # Reporte agregado (RF: vista institucional, no solo lista de sesiones):
+    # alumnos y cuentos con más actividad, y tendencia de los últimos 14 días.
+    top_ninos = (
+        resultados.filter(nino__isnull=False)
+        .values('nino_id', 'nino__nombre', 'nino__apellido')
+        .annotate(sesiones=Count('id'))
+        .order_by('-sesiones')[:5]
+    )
+    top_cuentos = (
+        resultados.filter(cuento__isnull=False)
+        .values('cuento_id', 'cuento__titulo')
+        .annotate(sesiones=Count('id'), likes=Count('id', filter=Q(le_gusto=True)))
+        .order_by('-sesiones')[:5]
+    )
+
+    dias_de_historial = 14
+    desde = timezone.now() - timedelta(days=dias_de_historial - 1)
+    sesiones_por_fecha = {
+        fila['dia']: fila['sesiones']
+        for fila in (
+            resultados.filter(fecha__gte=desde)
+            .annotate(dia=TruncDate('fecha'))
+            .values('dia')
+            .annotate(sesiones=Count('id'))
+            # Limpia el order_by('-fecha') heredado: si no, Django lo agrega al
+            # GROUP BY (por su precisión completa) y cada sesión queda en su
+            # propio grupo en vez de sumarse con las demás del mismo día.
+            .order_by()
+        )
+    }
+    hoy = timezone.localdate()
+    sesiones_por_dia = [
+        {
+            'fecha': (hoy - timedelta(days=offset)).strftime('%d/%m'),
+            'sesiones': sesiones_por_fecha.get(hoy - timedelta(days=offset), 0),
+        }
+        for offset in range(dias_de_historial - 1, -1, -1)
+    ]
+
     pagina = Paginator(resultados, 50).get_page(request.GET.get('page'))
 
     return render(request, 'narraciones/historial.html', {
         'resultados': pagina,
         'total': total,
         'likes': likes,
-        'porcentaje_positivo': porcentaje_positivo
+        'porcentaje_positivo': porcentaje_positivo,
+        'top_ninos': top_ninos,
+        'top_cuentos': top_cuentos,
+        'sesiones_por_dia_json': json.dumps(sesiones_por_dia),
     })
 
 

@@ -278,6 +278,29 @@ class HistorialTests(TestCase):
         self.assertEqual(response.context['likes'], 2)
         self.assertContains(response, 'Historia libre')
 
+    def test_historial_incluye_top_ninos_y_cuentos(self):
+        otro_nino = Nino.objects.create(nombre='Ana', apellido='Test', edad=6, dni='889')
+        ResultadoNarracion.objects.create(cuento=self.cuento, nino=self.nino, le_gusto=True)
+        ResultadoNarracion.objects.create(cuento=self.cuento, nino=self.nino, le_gusto=True)
+        ResultadoNarracion.objects.create(cuento=self.cuento, nino=otro_nino, le_gusto=False)
+
+        response = self.client.get(reverse('narraciones:historial_sesiones'))
+
+        top_ninos = list(response.context['top_ninos'])
+        self.assertEqual(top_ninos[0]['nino_id'], self.nino.id)
+        self.assertEqual(top_ninos[0]['sesiones'], 2)
+
+        top_cuentos = list(response.context['top_cuentos'])
+        self.assertEqual(top_cuentos[0]['cuento_id'], self.cuento.id)
+        self.assertEqual(top_cuentos[0]['sesiones'], 3)
+        self.assertEqual(top_cuentos[0]['likes'], 2)
+
+        self.assertIn('sesiones_por_dia_json', response.context)
+        import json
+        dias = json.loads(response.context['sesiones_por_dia_json'])
+        self.assertEqual(len(dias), 14)
+        self.assertEqual(sum(d['sesiones'] for d in dias), 3)
+
 
 class JardinAislamientoTests(TestCase):
     """Multi-institución: los datos de un jardín no deben ser visibles para otro."""
