@@ -172,6 +172,26 @@ class BusquedaPictogramaTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertFalse(response.json()['encontrado'])
 
+    def test_frase_compuesta_matchea_por_sinonimo_de_frase(self):
+        """Un nombre propio como 'Caperucita Roja' tiene que reconocerse como frase."""
+        crear_pictograma('Caperucita', ['caperucita', 'caperucita roja'])
+        response = self.client.get(reverse('narraciones:buscar_pictograma'), {'palabra': 'caperucita roja'})
+        data = response.json()
+        self.assertTrue(data['encontrado'])
+        self.assertEqual(data['nombre'], 'Caperucita')
+
+    def test_frase_sin_coincidencia_exacta_no_usa_la_red_neuronal(self):
+        """Una frase de varias palabras sin sinonimo exacto no debe caer en el
+        modelo de ML (entrenado con palabras sueltas): podria matchear falso
+        por pura similitud de caracteres (ej. 'una' contra 'Luna')."""
+        crear_pictograma('Rojo', ['rojo', 'roja'])
+        with patch('narraciones.views.predecir_pictograma') as mock_predecir:
+            mock_predecir.return_value = ('Rojo', 0.99)  # aunque "encontraria" algo, no debe ni llamarse
+            response = self.client.get(reverse('narraciones:buscar_pictograma'), {'palabra': 'caperucita roja'})
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(response.json()['encontrado'])
+        mock_predecir.assert_not_called()
+
     def test_pictograma_no_revisado_no_aparece_en_narracion(self):
         """RF-05: una imagen recién subida no debe usarse hasta ser aprobada manualmente."""
         crear_pictograma('Casa', ['casa'], revisado=False)

@@ -207,17 +207,41 @@
         // Compartida entre el reconocimiento de voz y la entrada manual (fallback
         // para navegadores sin soporte de voz): separa palabras, filtra
         // puntuación, duplicados y palabras vacías, y consulta cada una.
-        function procesarPalabrasDeTexto(texto) {
+        //
+        // Antes de buscar una palabra sola, prueba si junto con la siguiente
+        // forma una frase con pictograma propio (ej. "caperucita roja"), para
+        // no mostrar un pictograma suelto y fuera de contexto (ej. el color
+        // "rojo") cuando en realidad es parte de un nombre propio.
+        async function procesarPalabrasDeTexto(texto) {
             const palabras = texto.toLowerCase()
                 .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()¿?¡!]/g, "")
-                .split(/\s+/);
+                .split(/\s+/)
+                .filter(p => p.length > 0);
 
-            palabras.forEach(palabra => {
+            let i = 0;
+            while (i < palabras.length) {
+                const palabra = palabras[i];
+
+                if (i + 1 < palabras.length) {
+                    const frase = `${palabra} ${palabras[i + 1]}`;
+                    if (!palabrasProcesadas.has(frase)) {
+                        palabrasProcesadas.add(frase);
+                        const encontrada = await buscarPictograma(frase, false);
+                        if (encontrada) {
+                            palabrasProcesadas.add(palabra);
+                            palabrasProcesadas.add(palabras[i + 1]);
+                            i += 2;
+                            continue;
+                        }
+                    }
+                }
+
                 if (palabra.length > 2 && !palabrasProcesadas.has(palabra) && !PALABRAS_VACIAS.has(palabra)) {
-                    buscarPictograma(palabra);
+                    await buscarPictograma(palabra);
                     palabrasProcesadas.add(palabra);
                 }
-            });
+                i += 1;
+            }
         }
 
         function actualizarCuento() {
@@ -452,20 +476,22 @@
             }, 1800);
         }
 
-        async function buscarPictograma(palabra) {
+        async function buscarPictograma(palabra, avisarSiNoEncontrado = true) {
             try {
                 const response = await fetch(`{% url 'narraciones:buscar_pictograma' %}?palabra=${encodeURIComponent(palabra)}`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.encontrado) {
                         renderizarCardPictograma(data.url, data.nombre, data.tipo, data.origen, data.confianza);
+                        return true;
                     }
-                } else if (response.status === 404) {
+                } else if (response.status === 404 && avisarSiNoEncontrado) {
                     mostrarPalabraNoEncontrada(palabra);
                 }
             } catch (error) {
                 console.error("Error al consultar pictograma:", error);
             }
+            return false;
         }
 
         // Texto a voz: solo al tocar una tarjeta (nunca automático durante la

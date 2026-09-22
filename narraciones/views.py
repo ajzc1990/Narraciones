@@ -233,7 +233,14 @@ def buscar_pictograma(request):
             'origen': 'diccionario'
         })
 
-    # 3. Fallback: red neuronal supervisada (RNF-05) para variantes no cargadas manualmente
+    # 3. Fallback: red neuronal supervisada (RNF-05) para variantes no cargadas
+    # manualmente. Solo para una palabra sola: el modelo se entrena con
+    # palabras sueltas, así que sobre una frase de varias palabras (usadas
+    # para detectar nombres compuestos como "caperucita roja") puede "inventar"
+    # una coincidencia falsa por pura similitud de caracteres.
+    if ' ' in palabra_limpia:
+        return JsonResponse({'encontrado': False, 'error': 'No existe pictograma para esta frase'}, status=404)
+
     prediccion = predecir_pictograma(palabra_limpia)
     if prediccion:
         nombre_predicho, confianza = prediccion

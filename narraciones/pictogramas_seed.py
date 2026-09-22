@@ -33,6 +33,11 @@ COLORES_FONDO = [
 
 # nombre_identificador -> (emoji, tipo, [sinonimos])
 PICTOGRAMAS_DATA = [
+    # "caperucita roja" como frase compuesta: se busca antes que las palabras
+    # sueltas (ver PALABRAS_VACIAS/frases en index.html) para que no se
+    # muestre el pictograma de "Rojo" cuando en realidad es el nombre del
+    # personaje, no el color.
+    ("Caperucita", "👧", "sustantivo", ["caperucita", "caperucita roja"]),
     ("Niña", "👧", "sustantivo", ["niña", "nena", "chica"]),
     ("Mamá", "👩", "sustantivo", ["mama", "mamá", "madre"]),
     ("Cesta", "🧺", "sustantivo", ["cesta", "canasta"]),
