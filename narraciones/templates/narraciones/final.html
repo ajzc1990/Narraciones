@@ -102,6 +102,22 @@
         </div>
     </div>
 
+    <!-- Rompecabezas: reordenar los pictogramas narrados en su orden original -->
+    <div id="rompecabezas-seccion" class="hidden relative z-10 max-w-3xl w-full mx-auto bg-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl border border-purple-100 text-center mb-8">
+        <h2 class="text-xl md:text-2xl font-extrabold text-slate-800 mb-1">🧩 Armá el rompecabezas</h2>
+        <p class="text-slate-500 text-xs md:text-sm mb-2">Tocá dos pictogramas para intercambiarlos, hasta ponerlos en el orden en que los narraste</p>
+        <p id="rompecabezas-mensaje" class="text-sm font-bold h-6 mb-4"></p>
+        <div id="rompecabezas-piezas" class="flex flex-wrap justify-center gap-4 mb-6"></div>
+        <div class="flex flex-wrap justify-center gap-3">
+            <button id="rompecabezas-verificar" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-full shadow-md transition-all text-sm">
+                ✅ Verificar orden
+            </button>
+            <button id="rompecabezas-mezclar" class="bg-white hover:bg-slate-50 text-slate-600 font-bold py-3 px-8 rounded-full shadow-md border border-slate-200 transition-all text-sm">
+                🔀 Mezclar de nuevo
+            </button>
+        </div>
+    </div>
+
     <!-- Resumen visual: todos los pictogramas narrados, en orden -->
     <div id="storyboard-seccion" class="hidden relative z-10 max-w-3xl w-full mx-auto bg-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl border border-blue-100 text-center">
         <h2 class="text-xl md:text-2xl font-extrabold text-slate-800 mb-1">🧩 Así armaste tu historia</h2>
@@ -268,6 +284,70 @@
             seccion.style.visibility = '';
         }
 
+        // Rompecabezas: reordenar los pictogramas narrados (RF: refuerza
+        // secuenciación narrativa). Interacción por toque de a pares en vez de
+        // arrastrar y soltar, mucho más confiable en tablets.
+        let piezasRompecabezas = [];
+        let ordenCorrectoRompecabezas = [];
+        let piezaSeleccionada = null;
+
+        function mezclarArray(lista) {
+            const copia = [...lista];
+            for (let i = copia.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copia[i], copia[j]] = [copia[j], copia[i]];
+            }
+            return copia;
+        }
+
+        function rompecabezasEstaOrdenado() {
+            return piezasRompecabezas.every((pieza, i) => pieza.url === ordenCorrectoRompecabezas[i].url);
+        }
+
+        function iniciarRompecabezas(secuencia) {
+            if (secuencia.length < 3) return;
+
+            ordenCorrectoRompecabezas = secuencia;
+            let intentos = 0;
+            do {
+                piezasRompecabezas = mezclarArray(secuencia);
+                intentos++;
+            } while (rompecabezasEstaOrdenado() && intentos < 10);
+
+            piezaSeleccionada = null;
+            const mensaje = document.getElementById('rompecabezas-mensaje');
+            mensaje.textContent = '';
+            document.getElementById('rompecabezas-seccion').classList.remove('hidden');
+            dibujarPiezasRompecabezas();
+        }
+
+        function dibujarPiezasRompecabezas() {
+            const contenedor = document.getElementById('rompecabezas-piezas');
+            contenedor.innerHTML = '';
+            piezasRompecabezas.forEach((pieza, index) => {
+                const div = document.createElement('div');
+                const seleccionada = index === piezaSeleccionada;
+                div.className = 'w-24 h-24 md:w-28 md:h-28 bg-white rounded-2xl shadow-md border-2 cursor-pointer transition-all flex items-center justify-center p-2 ' +
+                    (seleccionada ? 'border-purple-500 ring-4 ring-purple-200 scale-105' : 'border-slate-200 hover:border-purple-300');
+                div.innerHTML = `<img src="${pieza.url}" alt="${pieza.nombre}" class="w-full h-full object-contain">`;
+                div.onclick = () => manejarClicPieza(index);
+                contenedor.appendChild(div);
+            });
+        }
+
+        function manejarClicPieza(index) {
+            if (piezaSeleccionada === null) {
+                piezaSeleccionada = index;
+            } else if (piezaSeleccionada === index) {
+                piezaSeleccionada = null;
+            } else {
+                [piezasRompecabezas[piezaSeleccionada], piezasRompecabezas[index]] =
+                    [piezasRompecabezas[index], piezasRompecabezas[piezaSeleccionada]];
+                piezaSeleccionada = null;
+            }
+            dibujarPiezasRompecabezas();
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             let secuencia = [];
             try {
@@ -279,7 +359,23 @@
 
             if (secuencia.length > 0) {
                 dibujarStoryboard(secuencia);
+                iniciarRompecabezas(secuencia);
             }
+
+            document.getElementById('rompecabezas-verificar').onclick = () => {
+                const mensaje = document.getElementById('rompecabezas-mensaje');
+                if (rompecabezasEstaOrdenado()) {
+                    mensaje.textContent = '¡Lo lograste! 🎉 Los pusiste en el orden correcto.';
+                    mensaje.className = 'text-sm font-bold h-6 mb-4 text-emerald-600';
+                } else {
+                    mensaje.textContent = 'Todavía no... ¡seguí intentando! 💪';
+                    mensaje.className = 'text-sm font-bold h-6 mb-4 text-amber-600';
+                }
+            };
+
+            document.getElementById('rompecabezas-mezclar').onclick = () => {
+                iniciarRompecabezas(ordenCorrectoRompecabezas);
+            };
 
             document.getElementById('storyboard-descargar').onclick = () => {
                 const canvas = document.getElementById('storyboard-canvas');
