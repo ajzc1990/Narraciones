@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importar Niños por CSV - Narraciones Interactivas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #f0f9ff; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 py-10">
+    <div class="max-w-lg w-full bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl border border-blue-100">
+        <div class="text-center mb-6">
+            <span class="text-4xl block mb-2">📥</span>
+            <h1 class="text-2xl font-extrabold text-slate-800">Importar niños por CSV</h1>
+            <p class="text-slate-500 text-sm mt-1">Cargá varios alumnos de una sola vez en vez de uno por uno</p>
+        </div>
+
+        <a href="{% url 'narraciones:nino_importar_plantilla' %}" class="block text-center bg-slate-50 hover:bg-slate-100 border-2 border-slate-200 text-slate-600 font-bold py-3 rounded-2xl mb-6 text-sm transition-all">
+            📄 Descargar plantilla de ejemplo
+        </a>
+
+        {% if creados is not None %}
+        <div class="mb-6 p-4 rounded-2xl {% if creados > 0 %}bg-emerald-50 border border-emerald-200{% else %}bg-amber-50 border border-amber-200{% endif %}">
+            <p class="font-bold text-sm {% if creados > 0 %}text-emerald-700{% else %}text-amber-700{% endif %}">
+                {{ creados }} de {{ total_filas }} niño(s) importado(s) correctamente.
+            </p>
+            {% if errores %}
+            <p class="text-xs text-amber-700 font-bold mt-2 mb-1">Filas con problemas (no se importaron):</p>
+            <ul class="text-xs text-amber-700 space-y-1 max-h-40 overflow-y-auto">
+                {% for error in errores %}
+                <li>• {{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="text-blue-700 font-bold mb-1.5 text-sm block">Archivo CSV</label>
+                <input type="file" name="archivo_csv" accept=".csv" required
+                    class="w-full p-3.5 border-2 border-blue-100 rounded-2xl focus:border-blue-500 outline-none transition-all text-slate-700 font-medium text-sm">
+            </div>
+            <p class="text-slate-400 text-xs leading-relaxed">
+                Columnas esperadas: <code class="bg-slate-100 px-1 rounded">nombre, apellido, dni, telefono, domicilio,
+                fecha_nacimiento, edad, institucion_o_sala, autorizacion_parental</code>.
+                En <code class="bg-slate-100 px-1 rounded">autorizacion_parental</code> poné "si" solo si ya contás con
+                la autorización de los padres/tutores — sin eso, esa fila no se va a importar.
+            </p>
+
+            <div class="flex gap-3 pt-2">
+                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-full shadow-lg transition-all">
+                    Importar
+                </button>
+                <a href="{% url 'narraciones:nino_lista' %}" class="flex-1 text-center bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-full transition-all">
+                    Volver
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Botón de Ayuda flotante (RNF-02) -->
+    <a href="{% url 'narraciones:ayuda' %}" target="_blank" title="Ayuda"
+       class="fixed bottom-5 right-5 z-50 bg-amber-400 hover:bg-amber-500 text-slate-900 w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-2xl font-extrabold transition-transform hover:scale-110">
+        ?
+    </a>
+</body>
+</html>

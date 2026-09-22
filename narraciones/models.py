@@ -251,6 +251,7 @@ class RegistroAuditoria(models.Model):
         ('editar_nino', 'Modificó datos de un niño/a'),
         ('eliminar_nino', 'Eliminó a un niño/a'),
         ('exportar_pdf', 'Exportó un informe en PDF'),
+        ('importar_ninos_csv', 'Importó niños/as por CSV'),
     ]
 
     usuario = models.ForeignKey(

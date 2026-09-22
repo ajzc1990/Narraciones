@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Instituciones - Narraciones Interactivas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #f8fafc; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 gap-4">
+            <div class="text-center md:text-left">
+                <h1 class="text-2xl font-bold text-slate-800">🏢 Panel de Instituciones</h1>
+                <p class="text-slate-500 mt-1 text-sm">Todas las instituciones registradas, de un vistazo</p>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-blue-50 px-4 py-3 rounded-2xl border border-blue-100 text-center shadow-sm min-w-[80px]">
+                    <span class="block text-xl font-bold text-blue-600">{{ total_jardines }}</span>
+                    <span class="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Totales</span>
+                </div>
+                <div class="bg-emerald-50 px-4 py-3 rounded-2xl border border-emerald-100 text-center shadow-sm min-w-[80px]">
+                    <span class="block text-xl font-bold text-emerald-600">{{ total_activos }}</span>
+                    <span class="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Activas</span>
+                </div>
+                <div class="bg-amber-50 px-4 py-3 rounded-2xl border border-amber-100 text-center shadow-sm min-w-[80px]">
+                    <span class="block text-xl font-bold text-amber-600">{{ total_pendientes }}</span>
+                    <span class="text-[10px] text-amber-500 font-bold uppercase tracking-wider">Pendientes</span>
+                </div>
+            </div>
+        </div>
+
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+            <div class="px-5 py-3 rounded-2xl text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                            <th class="px-6 py-4">Institución</th>
+                            <th class="px-6 py-4 text-center">Estado</th>
+                            <th class="px-6 py-4 text-center">Usuarios</th>
+                            <th class="px-6 py-4 text-center">Niños</th>
+                            <th class="px-6 py-4 text-center">Sesiones</th>
+                            <th class="px-6 py-4 text-center">Último acceso</th>
+                            <th class="px-6 py-4 text-center">Alta</th>
+                            <th class="px-6 py-4 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-600 text-sm font-medium">
+                        {% for fila in filas %}
+                        <tr class="hover:bg-blue-50/40 transition-colors">
+                            <td class="px-6 py-4">
+                                <p class="font-bold text-slate-800">{{ fila.jardin.razon_social }}</p>
+                                {% if fila.es_demo %}
+                                <span class="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">✨ tiene cuenta demo</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                {% if fila.jardin.activo %}
+                                    <span class="bg-emerald-50 text-emerald-600 text-[11px] font-bold px-3 py-1 rounded-full">Activa</span>
+                                {% else %}
+                                    <span class="bg-amber-50 text-amber-600 text-[11px] font-bold px-3 py-1 rounded-full">Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-center">{{ fila.total_usuarios }}</td>
+                            <td class="px-6 py-4 text-center">{{ fila.total_ninos }}</td>
+                            <td class="px-6 py-4 text-center">{{ fila.total_sesiones }}</td>
+                            <td class="px-6 py-4 text-center text-xs">
+                                {% if fila.ultimo_login %}{{ fila.ultimo_login|date:"d/m/Y H:i" }}{% else %}<span class="text-slate-400">Nunca</span>{% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-center text-xs">{{ fila.jardin.creado_en|date:"d/m/Y" }}</td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="flex items-center justify-center gap-2 flex-wrap">
+                                    {% if fila.jardin.activo %}
+                                    <form method="post" action="{% url 'narraciones:panel_superadmin_actualizar' jardin_id=fila.jardin.id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="desactivar">
+                                        <button type="submit" class="text-xs font-bold text-rose-500 hover:underline">Desactivar</button>
+                                    </form>
+                                    {% else %}
+                                    <form method="post" action="{% url 'narraciones:panel_superadmin_actualizar' jardin_id=fila.jardin.id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="aprobar">
+                                        <button type="submit" class="text-xs font-bold text-emerald-600 hover:underline">Aprobar</button>
+                                    </form>
+                                    {% endif %}
+                                    <a href="/admin/narraciones/jardin/{{ fila.jardin.id }}/change/" class="text-xs font-bold text-slate-400 hover:underline">Ver en admin</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center opacity-40">
+                                    <span class="text-5xl mb-3">🏢</span>
+                                    <p class="text-base font-bold text-slate-700">Todavía no hay instituciones registradas</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-center">
+            <a href="{% url 'narraciones:menu' %}" class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-bold py-3 px-8 rounded-full transition-all shadow-md border border-slate-200 text-sm">
+                <span>⬅</span> VOLVER AL MENÚ
+            </a>
+        </div>
+    </div>
+</body>
+</html>

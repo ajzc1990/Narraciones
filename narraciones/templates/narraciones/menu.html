@@ -75,6 +75,16 @@
             </div>
         </a>
         {% endif %}
+
+        {% if user.is_superuser %}
+        <a href="{% url 'narraciones:panel_superadmin' %}" class="boton-menu bg-slate-800 hover:bg-slate-900 text-white p-6 rounded-3xl shadow-lg flex items-center gap-4 sm:col-span-2">
+            <span class="text-3xl">🏢</span>
+            <div>
+                <p class="font-extrabold text-lg">Panel de instituciones</p>
+                <p class="text-slate-300 text-xs font-semibold">Ver todas las instituciones registradas (superusuario)</p>
+            </div>
+        </a>
+        {% endif %}
     </main>
 
     <a href="{% url 'narraciones:landing' %}" class="mt-10 text-slate-400 text-xs font-bold hover:text-slate-600">⬅ Volver al inicio</a>

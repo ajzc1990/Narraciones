@@ -26,6 +26,10 @@ urlpatterns = [
     path('institucion/equipo/', views.jardin_equipo, name='jardin_equipo'),
     path('institucion/equipo/<int:usuario_id>/actualizar/', views.jardin_equipo_actualizar, name='jardin_equipo_actualizar'),
 
+    # Panel del superusuario: todas las instituciones de un vistazo
+    path('panel-superadmin/', views.panel_superadmin, name='panel_superadmin'),
+    path('panel-superadmin/<int:jardin_id>/actualizar/', views.panel_superadmin_actualizar, name='panel_superadmin_actualizar'),
+
     # Recuperación de contraseña
     path('password-reset/', auth_views.PasswordResetView.as_view(
         template_name='narraciones/password_reset_form.html',
@@ -49,6 +53,8 @@ urlpatterns = [
     path('ninos/alta/', views.nino_alta, name='nino_alta'),
     path('ninos/<int:nino_id>/editar/', views.nino_editar, name='nino_editar'),
     path('ninos/<int:nino_id>/eliminar/', views.nino_eliminar, name='nino_eliminar'),
+    path('ninos/importar/', views.nino_importar, name='nino_importar'),
+    path('ninos/importar/plantilla/', views.nino_importar_plantilla, name='nino_importar_plantilla'),
 
     # Endpoints API / Asíncronos
     path('buscar-pictograma/', views.buscar_pictograma, name='buscar_pictograma'),

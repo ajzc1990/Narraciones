@@ -152,6 +152,72 @@ class NinoCRUDTests(TestCase):
         self.assertNotContains(response, 'Persona')
 
 
+class NinoImportarCSVTests(TestCase):
+    """Alta masiva de niños por CSV, para instituciones con muchos alumnos."""
+
+    def setUp(self):
+        self.jardin = Jardin.objects.create(razon_social='Jardín CSV')
+        self.usuario = User.objects.create_user('docente_csv', password='ContraseñaSegura123')
+        PerfilUsuario.objects.create(usuario=self.usuario, edad=30, jardin=self.jardin)
+        self.client.force_login(self.usuario)
+
+    def _csv(self, filas):
+        encabezado = 'nombre,apellido,dni,telefono,domicilio,fecha_nacimiento,edad,institucion_o_sala,autorizacion_parental'
+        contenido = '\n'.join([encabezado] + filas)
+        return ContentFile(contenido.encode('utf-8'), name='ninos.csv')
+
+    def test_importa_filas_validas_con_autorizacion(self):
+        archivo = self._csv([
+            'Juan,Pérez,111,,,,7,Sala Roja,si',
+            'María,García,222,,,,5,Sala Amarilla,1',
+        ])
+        response = self.client.post(reverse('narraciones:nino_importar'), {'archivo_csv': archivo})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['creados'], 2)
+        self.assertEqual(Nino.objects.filter(jardin=self.jardin).count(), 2)
+        nino = Nino.objects.get(dni='111')
+        self.assertTrue(nino.autorizacion_parental)
+        self.assertEqual(nino.jardin, self.jardin)
+        self.assertEqual(nino.tutor, self.usuario)
+
+    def test_rechaza_fila_sin_autorizacion_parental(self):
+        archivo = self._csv([
+            'Juan,Pérez,333,,,,7,Sala Roja,no',
+            'María,García,444,,,,5,Sala Amarilla,',
+        ])
+        response = self.client.post(reverse('narraciones:nino_importar'), {'archivo_csv': archivo})
+        self.assertEqual(response.context['creados'], 0)
+        self.assertEqual(len(response.context['errores']), 2)
+        self.assertFalse(Nino.objects.filter(dni__in=['333', '444']).exists())
+
+    def test_fila_invalida_no_bloquea_las_validas(self):
+        archivo = self._csv([
+            'Juan,Pérez,555,,,,7,Sala Roja,si',
+            ',,,,,, ,,si',  # fila vacia / invalida
+        ])
+        response = self.client.post(reverse('narraciones:nino_importar'), {'archivo_csv': archivo})
+        self.assertEqual(response.context['creados'], 1)
+        self.assertEqual(len(response.context['errores']), 1)
+        self.assertTrue(Nino.objects.filter(dni='555').exists())
+
+    def test_queda_registrado_en_auditoria(self):
+        archivo = self._csv(['Juan,Pérez,666,,,,7,Sala Roja,si'])
+        self.client.post(reverse('narraciones:nino_importar'), {'archivo_csv': archivo})
+        self.assertTrue(RegistroAuditoria.objects.filter(accion='importar_ninos_csv').exists())
+
+    def test_requiere_login(self):
+        self.client.logout()
+        response = self.client.get(reverse('narraciones:nino_importar'))
+        self.assertEqual(response.status_code, 302)
+
+    def test_descargar_plantilla(self):
+        response = self.client.get(reverse('narraciones:nino_importar_plantilla'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        contenido = response.content.decode('utf-8')
+        self.assertIn('autorizacion_parental', contenido)
+
+
 class BusquedaPictogramaTests(TestCase):
     """RF-03/RF-04: reconocimiento de pictogramas por palabra, y RF-05: moderación."""
 
@@ -562,3 +628,61 @@ class DemoLimiteLoginTests(TestCase):
         PerfilUsuario.objects.filter(id=self.perfil.id).update(logins_demo_usados=0)
         self.perfil.refresh_from_db()
         self.assertFalse(self.perfil.demo_agotada)
+
+
+class PanelSuperadminTests(TestCase):
+    """Panel global de instituciones, solo para el equipo que opera la plataforma."""
+
+    def setUp(self):
+        self.jardin_activo = Jardin.objects.create(razon_social='Jardín Activo', activo=True)
+        self.jardin_pendiente = Jardin.objects.create(razon_social='Jardín Pendiente', activo=False)
+
+        docente = User.objects.create_user('docente_panel', password='ContraseñaSegura123')
+        PerfilUsuario.objects.create(usuario=docente, edad=30, jardin=self.jardin_activo)
+        Nino.objects.create(nombre='Leo', apellido='Test', edad=5, jardin=self.jardin_activo)
+
+        self.superusuario = User.objects.create_superuser('superadmin', 'admin@example.com', 'ContraseñaSegura123')
+        self.usuario_normal = docente
+
+    def test_usuario_normal_no_puede_ver_el_panel(self):
+        self.client.force_login(self.usuario_normal)
+        response = self.client.get(reverse('narraciones:panel_superadmin'))
+        self.assertRedirects(response, reverse('narraciones:menu'))
+
+    def test_superusuario_ve_todas_las_instituciones_con_sus_totales(self):
+        self.client.force_login(self.superusuario)
+        response = self.client.get(reverse('narraciones:panel_superadmin'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_jardines'], 2)
+        self.assertEqual(response.context['total_activos'], 1)
+        self.assertEqual(response.context['total_pendientes'], 1)
+
+        fila_activa = next(f for f in response.context['filas'] if f['jardin'].id == self.jardin_activo.id)
+        self.assertEqual(fila_activa['total_usuarios'], 1)
+        self.assertEqual(fila_activa['total_ninos'], 1)
+
+    def test_superusuario_puede_aprobar_una_institucion_pendiente(self):
+        self.client.force_login(self.superusuario)
+        self.client.post(reverse('narraciones:panel_superadmin_actualizar', args=[self.jardin_pendiente.id]), {'accion': 'aprobar'})
+        self.jardin_pendiente.refresh_from_db()
+        self.assertTrue(self.jardin_pendiente.activo)
+
+    def test_superusuario_puede_desactivar_una_institucion(self):
+        self.client.force_login(self.superusuario)
+        self.client.post(reverse('narraciones:panel_superadmin_actualizar', args=[self.jardin_activo.id]), {'accion': 'desactivar'})
+        self.jardin_activo.refresh_from_db()
+        self.assertFalse(self.jardin_activo.activo)
+
+    def test_usuario_normal_no_puede_actualizar_instituciones(self):
+        self.client.force_login(self.usuario_normal)
+        response = self.client.post(reverse('narraciones:panel_superadmin_actualizar', args=[self.jardin_pendiente.id]), {'accion': 'aprobar'})
+        self.assertRedirects(response, reverse('narraciones:menu'))
+        self.jardin_pendiente.refresh_from_db()
+        self.assertFalse(self.jardin_pendiente.activo)
+
+    def test_superusuario_no_queda_bloqueado_por_middleware_de_jardin_pendiente(self):
+        """Un superusuario nunca debe quedar atrapado por el gating de institucion/demo."""
+        perfil_super = PerfilUsuario.objects.create(usuario=self.superusuario, edad=40, jardin=self.jardin_pendiente)
+        self.client.force_login(self.superusuario)
+        response = self.client.get(reverse('narraciones:menu'))
+        self.assertEqual(response.status_code, 200)

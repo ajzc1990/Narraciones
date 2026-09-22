@@ -1,3 +1,5 @@
+import csv
+import io
 import json
 import string
 from django.core.paginator import Paginator
@@ -6,9 +8,9 @@ from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_POST, require_GET, require_http_methods
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
-from django.db.models import Count, Q
+from django.db.models import Count, Max, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.utils.text import slugify
@@ -18,7 +20,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import cm
 
-from .models import Pictograma, Sinonimo, Cuento, Nino, ResultadoNarracion, RegistroAuditoria, PerfilUsuario
+from .models import Pictograma, Sinonimo, Cuento, Nino, ResultadoNarracion, RegistroAuditoria, PerfilUsuario, Jardin
 from .forms import RegistroUsuarioForm, NinoForm
 from .ml_pictogramas import predecir_pictograma
 
@@ -184,6 +186,86 @@ def nino_eliminar(request, nino_id):
         RegistroAuditoria.registrar(request.user, 'eliminar_nino', detalle)
         return redirect('narraciones:nino_lista')
     return render(request, 'narraciones/nino_confirm_delete.html', {'nino': nino})
+
+
+COLUMNAS_IMPORTACION_NINOS = [
+    'nombre', 'apellido', 'dni', 'telefono', 'domicilio',
+    'fecha_nacimiento', 'edad', 'institucion_o_sala', 'autorizacion_parental',
+]
+
+
+def _valor_verdadero(valor):
+    return str(valor or '').strip().lower() in {'1', 'si', 'sí', 'true', 'verdadero', 'x'}
+
+
+@login_required
+@require_GET
+def nino_importar_plantilla(request):
+    """Descarga un CSV de ejemplo con las columnas esperadas por la importación masiva."""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="plantilla_ninos.csv"'
+    writer = csv.writer(response)
+    writer.writerow(COLUMNAS_IMPORTACION_NINOS)
+    writer.writerow(['Juan', 'Pérez', '45123456', '3811234567', 'Calle Falsa 123', '2018-05-10', '7', 'Sala Verde', 'si'])
+    return response
+
+
+@login_required
+def nino_importar(request):
+    """
+    Alta masiva de niños vía CSV (RF-07, para instituciones con muchos alumnos).
+    Cada fila se valida con las mismas reglas que el alta individual: una fila sin
+    autorización parental confirmada ('si'/'1'/'true'/'x') se rechaza igual que si
+    se hubiera dejado destildado el checkbox en el alta de a uno.
+    """
+    contexto = {'creados': None, 'errores': [], 'total_filas': 0}
+    if request.method == 'POST':
+        archivo = request.FILES.get('archivo_csv')
+        if not archivo:
+            messages.error(request, "Subí un archivo CSV.")
+            return render(request, 'narraciones/nino_importar.html', contexto)
+
+        try:
+            texto = io.TextIOWrapper(archivo.file, encoding='utf-8-sig')
+            lector = csv.DictReader(texto)
+            filas = list(lector)
+        except (UnicodeDecodeError, csv.Error):
+            messages.error(request, "No se pudo leer el archivo. Verificá que sea un CSV válido.")
+            return render(request, 'narraciones/nino_importar.html', contexto)
+
+        jardin = _jardin_de(request.user)
+        creados = 0
+        errores = []
+
+        for numero_fila, fila in enumerate(filas, start=2):  # la fila 1 es el encabezado
+            datos = {
+                campo: (fila.get(campo) or '').strip()
+                for campo in ['nombre', 'apellido', 'dni', 'telefono', 'domicilio', 'fecha_nacimiento', 'edad', 'institucion_o_sala']
+            }
+            if _valor_verdadero(fila.get('autorizacion_parental')):
+                datos['autorizacion_parental'] = 'on'
+
+            form = NinoForm(datos)
+            if form.is_valid():
+                nino = form.save(commit=False)
+                nino.tutor = request.user
+                nino.jardin = jardin
+                nino.save()
+                creados += 1
+            else:
+                resumen = '; '.join(f"{campo}: {', '.join(mensajes)}" for campo, mensajes in form.errors.items())
+                nombre_fila = f"{fila.get('nombre', '')} {fila.get('apellido', '')}".strip() or '(sin nombre)'
+                errores.append(f"Fila {numero_fila} ({nombre_fila}): {resumen}")
+
+        if creados:
+            detalle = f"{creados} niño(s) importado(s) por CSV"
+            if errores:
+                detalle += f", {len(errores)} fila(s) con error"
+            RegistroAuditoria.registrar(request.user, 'importar_ninos_csv', detalle)
+
+        contexto = {'creados': creados, 'errores': errores, 'total_filas': len(filas)}
+
+    return render(request, 'narraciones/nino_importar.html', contexto)
 
 
 @login_required
@@ -509,3 +591,72 @@ def landing(request):
         'total_pictogramas': total_pictogramas,
         'total_sesiones': total_sesiones,
     })
+
+
+def _es_superusuario(usuario):
+    return usuario.is_authenticated and usuario.is_superuser
+
+
+@user_passes_test(_es_superusuario, login_url='narraciones:menu', redirect_field_name=None)
+def panel_superadmin(request):
+    """
+    Panel para el equipo que opera/vende la plataforma: todas las
+    instituciones de un vistazo (no lo que ve cada institución del suyo).
+    Solo accesible a superusuarios.
+    """
+    jardines = Jardin.objects.annotate(
+        total_usuarios=Count('usuarios', distinct=True),
+        total_ninos=Count('ninos', distinct=True),
+    ).order_by('-creado_en')
+
+    ultimo_login_por_jardin = dict(
+        PerfilUsuario.objects.filter(jardin__isnull=False)
+        .values('jardin_id')
+        .annotate(ultimo=Max('usuario__last_login'))
+        .values_list('jardin_id', 'ultimo')
+    )
+    demo_por_jardin = set(
+        PerfilUsuario.objects.filter(jardin__isnull=False, limite_logins_demo__isnull=False)
+        .values_list('jardin_id', flat=True)
+    )
+    sesiones_por_jardin = dict(
+        ResultadoNarracion.objects.filter(nino__jardin__isnull=False)
+        .values('nino__jardin_id')
+        .annotate(total=Count('id'))
+        .values_list('nino__jardin_id', 'total')
+    )
+
+    filas = [
+        {
+            'jardin': jardin,
+            'total_usuarios': jardin.total_usuarios,
+            'total_ninos': jardin.total_ninos,
+            'total_sesiones': sesiones_por_jardin.get(jardin.id, 0),
+            'ultimo_login': ultimo_login_por_jardin.get(jardin.id),
+            'es_demo': jardin.id in demo_por_jardin,
+        }
+        for jardin in jardines
+    ]
+
+    return render(request, 'narraciones/panel_superadmin.html', {
+        'filas': filas,
+        'total_jardines': len(filas),
+        'total_activos': sum(1 for f in filas if f['jardin'].activo),
+        'total_pendientes': sum(1 for f in filas if not f['jardin'].activo),
+    })
+
+
+@user_passes_test(_es_superusuario, login_url='narraciones:menu', redirect_field_name=None)
+@require_POST
+def panel_superadmin_actualizar(request, jardin_id):
+    """Aprobar o desactivar una institución directo desde el panel, sin ir al admin de Django."""
+    jardin = get_object_or_404(Jardin, id=jardin_id)
+    accion = request.POST.get('accion')
+
+    if accion == 'aprobar':
+        jardin.aprobar()
+    elif accion == 'desactivar':
+        jardin.activo = False
+        jardin.save(update_fields=['activo'])
+
+    return redirect('narraciones:panel_superadmin')

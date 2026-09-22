@@ -36,7 +36,7 @@ class JardinActivoMiddleware:
             return self.get_response(request)
 
         usuario = getattr(request, 'user', None)
-        if usuario is not None and usuario.is_authenticated:
+        if usuario is not None and usuario.is_authenticated and not usuario.is_superuser:
             perfil = getattr(usuario, 'perfil', None)
 
             if self._rutas_permitidas is None:
