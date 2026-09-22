@@ -170,6 +170,21 @@
         let tiempoInicio = null;
         let secuenciaPictogramas = [];
 
+        // Palabras gramaticales sin significado propio (artículos, preposiciones,
+        // pronombres, conectores): nunca van a tener un pictograma, así que ni
+        // se consultan. Además de ahorrar pedidos innecesarios, evita que el
+        // modelo de ML les asigne por error un pictograma parecido por
+        // similitud de letras (ej. "una" coincidiendo con "Luna").
+        const PALABRAS_VACIAS = new Set([
+            'que', 'pero', 'muy', 'cuando', 'era', 'eran', 'los', 'las', 'del', 'con',
+            'sus', 'desde', 'también', 'nosotros', 'nosotras', 'ese', 'esa', 'esos', 'esas',
+            'esto', 'esta', 'estos', 'estas', 'demás', 'varios', 'varias', 'uno', 'una', 'unos',
+            'unas', 'junto', 'juntos', 'luego', 'entonces', 'porque', 'como', 'para', 'donde',
+            'hacia', 'hasta', 'sobre', 'entre', 'todo', 'toda', 'todos', 'todas', 'otro', 'otra',
+            'otros', 'otras', 'mismo', 'misma', 'tanto', 'tanta', 'algo', 'nada', 'alguien',
+            'nadie', 'cada', 'mientras', 'aunque', 'sin', 'aqui', 'aquí', 'alli', 'allí',
+        ]);
+
         function actualizarCuento() {
             const selectedOption = cuentoSelect.options[cuentoSelect.selectedIndex];
             if (cuentoSelect.value) {
@@ -297,7 +312,7 @@
                             .split(/\s+/);
 
                         palabras.forEach(palabra => {
-                            if (palabra.length > 2 && !palabrasProcesadas.has(palabra)) {
+                            if (palabra.length > 2 && !palabrasProcesadas.has(palabra) && !PALABRAS_VACIAS.has(palabra)) {
                                 buscarPictograma(palabra);
                                 palabrasProcesadas.add(palabra);
                             }
@@ -336,20 +351,34 @@
             }
         }
 
+        // Texto a voz: solo al tocar una tarjeta (nunca automático durante la
+        // grabación), para que el audio de la app no se cuele en el micrófono
+        // que está escuchando y genere reconocimientos falsos.
+        function hablarPalabra(texto) {
+            if (!('speechSynthesis' in window)) return;
+            const utterance = new SpeechSynthesisUtterance(texto);
+            utterance.lang = 'es-AR';
+            speechSynthesis.cancel();
+            speechSynthesis.speak(utterance);
+        }
+
         function renderizarCardPictograma(url, nombre, tipo, origen, confianza) {
             secuenciaPictogramas.push({ url, nombre });
 
             const card = document.createElement('div');
-            card.className = "bg-white p-4 rounded-2xl shadow-md text-center pictograma-anim border-2 border-blue-50 w-44 hover:shadow-xl transition-shadow flex flex-col items-center relative";
+            card.className = "bg-white p-4 rounded-2xl shadow-md text-center pictograma-anim border-2 border-blue-50 w-44 hover:shadow-xl transition-shadow flex flex-col items-center relative cursor-pointer";
+            card.title = "Tocar para escuchar la palabra";
             const insigniaIA = origen === 'red_neuronal'
                 ? `<span title="Reconocido por la red neuronal (${Math.round((confianza || 0) * 100)}% de confianza)" class="absolute -top-2 -right-2 bg-purple-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md">🧠 IA</span>`
                 : '';
             card.innerHTML = `
                 ${insigniaIA}
+                <span class="absolute -top-2 -left-2 bg-blue-500 text-white text-xs w-6 h-6 rounded-full shadow-md flex items-center justify-center">🔊</span>
                 <img src="${url}" alt="${nombre}" class="w-32 h-32 object-contain mb-3 rounded-lg">
                 <span class="block text-blue-800 font-bold text-base capitalize leading-tight">${nombre}</span>
                 <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-1">${tipo || 'Pictograma'}</span>
             `;
+            card.addEventListener('click', () => hablarPalabra(nombre));
             lienzo.appendChild(card);
         }
 

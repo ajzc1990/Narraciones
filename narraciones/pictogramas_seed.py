@@ -83,6 +83,23 @@ PICTOGRAMAS_DATA = [
     ("Azul", "🔵", "adjetivo", ["azul"]),
     ("Amarillo", "🟡", "adjetivo", ["amarillo", "amarilla"]),
     ("Verde", "🟢", "adjetivo", ["verde"]),
+
+    # Vocabulario agregado a partir de búsquedas reales sin resultado en
+    # producción (palabras de "El Patito Feo" que todavía no tenían pictograma).
+    ("Salir", "🚶", "verbo", ["salir", "salio", "salió", "saliendo", "salieron", "irse"]),
+    ("Llegar", "🏁", "verbo", ["llegar", "llego", "llegó", "llegando", "llegaron"]),
+    ("Descubrir", "🔍", "verbo", ["descubrir", "descubrio", "descubrió", "descubriendo", "descubrieron"]),
+    ("Decidir", "🤔", "verbo", ["decidir", "decidio", "decidió", "decidiendo", "decidieron"]),
+    ("Sentir", "❤️", "verbo", ["sentir", "sentia", "sentía", "sintio", "sintió", "sintiendo"]),
+    ("Vivir", "🌱", "verbo", ["vivir", "vivia", "vivía", "vivio", "vivió", "viviendo"]),
+    ("Ver", "👀", "verbo", ["ver", "vio", "veian", "veían", "mirar", "mira", "miro", "miró", "viendo"]),
+    ("Cuidar", "🤗", "verbo", ["cuidar", "cuidaba", "cuido", "cuidó", "cuidando"]),
+    ("Gris", "🩶", "adjetivo", ["gris", "grises"]),
+    ("Diferente", "🔀", "adjetivo", ["diferente", "diferentes", "distinto", "distinta"]),
+    ("Grande", "🐋", "adjetivo", ["grande", "grandes"]),
+    ("Primavera", "🌷", "sustantivo", ["primavera"]),
+    ("Invierno", "❄️", "sustantivo", ["invierno"]),
+    ("Reflejo", "🪞", "sustantivo", ["reflejo", "espejo"]),
 ]
 
 CUENTOS_DATA = {
